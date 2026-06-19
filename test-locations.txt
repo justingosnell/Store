@@ -1,0 +1,5 @@
+Chicago, IL, Museum, 01/15/2024, Field Museum
+Austin, TX, Restaurant, 02/20/2024, Franklin BBQ
+Portland, OR, Park, 03/10/2024, Forest Park
+New York, NY, Landmark, 04/05/2024, Statue of Liberty
+San Francisco, CA, Bridge, 05/12/2024, Golden Gate Bridge

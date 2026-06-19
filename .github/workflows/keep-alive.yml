@@ -1,0 +1,16 @@
+name: Keep Render App Alive
+
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render app to prevent cold start
+        run: |
+          curl -f https://joeyb.onrender.com/health || true
+        # The || true prevents the workflow from failing if the request fails temporarily

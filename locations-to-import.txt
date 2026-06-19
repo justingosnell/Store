@@ -1,0 +1,224 @@
+Memphis, TN 1-2-19 Viking
+Newport News, VA 1-5-19 Cowboy
+North Judson, IN 1-17-19 Indian
+Indianapolis, IN 1-17-19 Bunyan
+Metropolis, IL 2-28-19 Big John
+Yorktown, IN 3-5-19 Cowboy
+Dade City, FL 3-9-19 Bunyan
+Cape Coral, FL 3-9-19 Big John
+Bradenton, FL 3-9-19 Uniroyal Gal
+Tampa, FL 3-9-19 Mini (gone)
+Carmi, IL 4-27-19 Big John
+Chattanooga, TN 4-19-19 Cowboy
+Montpelier, IN 5-14-19 Indian
+Parkersburg, WV 5-20-19 Indian
+Bossier City, LA 6-26-19 Cowboy
+Livingston, IL 7-23-19 Mini
+Livingston, IL 7-23-19 Uniroyal Gal (gone)
+Niota, IL 7-23-19 Viking
+Foristell, MO 7-23-19 Bunyan
+Peoria, IL 7-24-19 Uniroyal Gal
+Brooklyn, MI 8-20-19 Bunyan
+Chesterfield Township, MI 8-28-19 Cowboy
+Edneyville, NC 8-31-19 Indian
+Flagstaff, AZ 9-9-19 Bunyan
+Bangor, MI 9-25-19 Viking
+Monroe, OH 9-29-19 Mini
+Buena Vista, VA 10-18-19 Cowboy
+Unger, WV 10-18-19 Uniroyal Gal
+Unger, WV 10-18-19 Bunyan
+Unger, WV 10-18-19 Big John
+Unger, WV 10-18-19 Cowboy
+Coopersburg, PA 10-18-19 Cowboy
+Phoenixville, PA 10-18-19 Halfwit
+Jersey City, NJ 10-18-19 Bunyan
+Riverhead, NY 10-19-19 Indian
+Blackwood, NJ 10-20-19 Uniroyal Gal
+Winslow, NJ 10-20-19 Viking
+Woodstown, NJ 10-20-19 Cowboy
+Dallas, GA 11-27-19 Bunyan
+Beaumont, TX 11-30-19 Halfwit
+San Antonio, TX 12-1-19 Indian (gone)
+Fredericksburg, TX 12-1-19 Cowboy
+Boerne, TX 12-1-19 Cowboy
+Waxahachie, TX 12-2-19 Cowboy
+Dallas, TX 12-2-19 Cowboy
+Texarkana, TX 12-2-19 Mini
+Burbank, IL 2-11-20 Frankenstein
+Chicago, IL 2-11-20 Indian
+Crystal Lake, IL 2-11-20 Indian
+Crystal Lake, IL 2-11-20 Bunyan
+Libertyville, IL 2-11-20 Mini
+Atlanta, IL 3-3-20 Cowboy
+Springfield, IL 3-3-20 Bunyan
+Springfield, IL 3-3-20 Viking
+Normal, IL 3-10-20 Mini
+Macon, IL 3-10-20 Mini
+Dallas, GA 8-5-20 Halfwit
+Richwood, WV 10-10-20 Mini
+Greensburg, PA 10-10-20 Headless
+Rockwood, PA 10-10-20 Cowboy
+Uniontown, PA 10-10-20 Bunyan
+Elkon, KY 11-19-20 Bunyan
+Wilson, NC 3-21-21 Bunyan
+Saint Roberts, MO 3-30-21 Bunyan
+Crownsville, MD 6-20-21 Bunyan
+Jensen Beach, FL 10-3-21 Viking
+Springfield, MO 5-31-22 Cowboy
+Afton, OK 5-31-22 Cowboy
+Afton, OK 5-31-22 Cowboy
+Tulsa, OK 5-31-22 Cowboy
+Calumet, OK 6-1-22 Indian
+Amarillo, TX 6-2-22 Waving Giant
+Gallup, NM 6-3-22 Cowboy
+Mentone, CA 6-6-22 Bunyan
+Los Angeles, CA 6-6-22 Chicken Boy
+Van Nuys, CA 6-7-22 Cowboy
+Malibu, CA 6-7-22 Cowboy
+Los Angeles, CA 6-7-22 Bunyan
+East Los Angeles, CA 6-7-22 Cowboy (gone)
+Carson, CA 6-7-22 Cowboy
+Joshua Tree, CA 6-8-22 Bunyan
+Phoenix, AZ 6-9-22 Bunyan (gone)
+Picacho, AZ 6-9-22 Boots
+Tuscon, AZ 6-9-22 Bunyan
+Tuscon, AZ 6-9-22 Cowboy
+Hatch, NM 6-10-22 Cowboy
+Hatch, NM 6-10-22 Mini
+Las Cruces, NM 6-10-22 Cowboy
+El Paso, TX 6-10-22 Uniroyal Gal
+Lamesa, TX 6-11-22 Uniroyal Gal
+Dallas, TX 6-11-22 Halfwit on ground
+Dallas, TX 6-11-22 Halfwit up high (gone)
+Gainesville, TX 6-11-22 Big John (gone)
+Gainesville, TX 6-11-22 Big John (gone)
+Gainesville, TX 6-11-22 Uniroyal Gal (gone)
+Gainesville, TX 6-11-22 Waving Giant (gone)
+Gainesville, TX 6-11-22 Waving Giant (gone)
+Coeburn, VA 6-24-22 Mini (gone)
+Rocky Mount, NC 7-1-22 Uniroyal Gal
+Irving, NY 8-5-22 Indian
+Irving, NY 8-5-22 Indian
+Derby, NY 8-5-22 Mini
+Mortons Gap, KY 8-9-22 Mini
+Bolton, NC 8-21-22 Uniroyal Gal
+Bolton, NC 8-21-22 Uniroyal Gal
+Bolton, NC 8-21-22 Uniroyal Gal (laying down)
+Bethel, NY 10-8-22 Bunyan
+Lake Luzerne, NY 10-9-22 Bunyan
+Lake George, NY 10-9-22 Bunyan
+Hancock, MA 10-9-22 Cowboy
+Rumford, ME 10-10-22 Bunyan
+Groveland, MA 10-12-22 Mini
+Shirley, MA 10-12-22 Indian
+Norwich, CT 10-13-22 Cowboy
+Cheshire, CT 10-13-22 Bunyan
+Stony Point, NY 10-13-22 Bunyan
+Elmsford, NY 10-13-22 Bunyan
+Seaside Heights, NJ 10-14-22 Halfwit
+Toms River, NJ 10-14-22 Bunyan
+Ocean City, NJ 10-14-22 Bunyan
+Hammonton, NJ 10-15-22 Halfwit
+Magnolia, NJ 10-15-22 Cowboy
+Middletown, DE 10-15-22 Frankenstein
+Ocean City, MD 10-15-22 Bunyan
+Berlin, MD 10-15-22 Mini
+Chincoteague, VA 10-15-22 Viking (gone)
+Urbanna, VA 10-16-22 Mini
+Dallas, GA 2-9-23 Clown (gone)
+Northport, MI 3-1-23 Uniroyal Gal
+Williamsville, MO 3-3-23 Indian
+Hot Springs, AR 3-4-23 Bunyan
+Hot Springs, AR 3-4-23 Bunyan
+Hochatown, OK 3-4-23 Bunyan
+Camdenton, MO 3-4-23 Indian
+Mount Vernon, IL 3-5-23 Uniroyal Gal
+Atlanta, IL 3-22-23 Head
+Galva, IL 3-22-23 Viking
+Waukin, IA 3-23-23 Cowboy
+East Troy, WI 3-23-23 Cowboy
+Berwyn, IL 3-24-23 Cowboy
+Oshkosh, WI 7-18-23 Mini
+Atlanta, IL 7-19-23 Halfwit
+Worth, IL 8-22-23 Mini
+Puyallup, WA 8-26-23 Bunyan
+Everett, WA 8-26-23 Cowboy
+Saint Maries, ID 8-28-23 Big Friend
+Pomeroy, WA 8-29-23 Uniroyal Gal
+Pomeroy, WA 8-29-23 Cowboy
+Pomeroy, WA 8-29-23 Indian (laying down)
+Beaverton, OR 8-30-23 Big Friend
+Myrtle Point, OR 9-1-23 Mini
+Willits, CA 9-2-23 Cowboy
+Forestville, CA 9-2-23 Bunyan
+Sutter Creek, CA 9-4-23 Mini
+Hayward, CA 9-4-23 Mini
+Hayward, CA 9-4-23 Halfwit
+Hayward, CA 9-4-23 Bunyan
+Hayward, CA 9-4-23 Bunyan
+Hayward, CA 9-4-23 Cowboy
+San Jose, CA 9-4-23 Cowboy
+Bakersfield, CA 9-5-23 Indian
+Ventura, CA 9-5-23 Bunyan
+Escondido, CA 9-7-23 Cowboy
+Staunton, VA 9-30-23 Mini
+Cassopolois, MI 1-29-24 Cowboy
+Hot Springs, AR 3-24-24 Cowboy (Spock)
+Denton, TX 3-25-24 Head
+Denton, TX 3-25-24 Head
+Wynnewood, OK 3-25-24 Cowboy
+Oktaha, OK 3-25-24 Mini
+Vinita, OK 3-25-24 Cowboy
+Wichita, KS 3-26-24 Cowboy
+Hutchinson, KS 3-26-24 Big John
+Hutchinson, KS 3-26-24 Mini
+Dodge City, KS 3-26-24 Cowboy
+Cleveland, MO 3-26-24 Bunyan
+St. Louis, MO 3-27-24 Big John
+Atlanta, IL 5-29-24 Big Friend
+Wabeno, WI 6-8-24 Bunyan
+Cochrane, WI 6-9-24 Viking
+Spooner, WI 6-9-24 Cowboy
+Bemidji, MN 6-9-24 Indian
+Karlstad, MN 6-10-24 Bunyan
+Carrington, ND 6-10-24 Indian
+Fargo, ND 6-10-24 Cowboy
+Lake, MN 6-10-24 Indian
+Sioux Fall, SD 6-11-24 Bunyan
+Sturgis, SD 6-11-24 Cowboy
+Billings, MT 6-12-24 Bunyan
+Great Falls, MT 6-12-24 Cowboy
+Blackfoot, ID 6-12-24 Uniroyal Gal
+Wendell, ID 6-12-24 Cowboy
+Pocatello, ID 6-13-24 Cowboy
+Springville, UT 6-13-24 Big Friend
+Helper, UT 6-13-24 Cowboy
+Colorado Springs, CO 6-14-24 Cowboy
+Longmont, CO 6-14-24 Cowboy
+Greeley, CO 6-14-24 Cowboy
+North Platte, NE 6-15-24 Indian
+Omaha, NE 6-15-24 Uniroyal Gal
+Lake Ozark, MO 6-15-24 Halfwit
+Batchtown, IL 6-16-24 Uniroyal Gal
+Bolton, NC 7-5-24 Bunyan
+Atlanta, IL 10-8-24 Uniroyal Gal
+Hiram, GA 6-13-25 Cowboy
+Richlands, VA 7-3-25 Mini
+Pontiac, MI 8-30-25 Indian
+Fonthill, Ontario, Canada 8-31-25 Canadian MM Head
+Cincinnati, OH Carpeteria Genie
+North Hollywood, CA Carpeteria Genie
+North Las Vegas Carpeteria Genie
+New Castle, IN Marathon Man
+Montpolier. IN Marathon Man
+Linwood, NC Pioneer Man
+Hendersonville, NC Pioneer Man
+Hillsborough, NC Pioneer Man
+Kill Devil Hill, NC Pioneer Man
+Myrtle Beach, SC Pioneer Man
+Wytheville, VA Pioneer Man
+Unger, WV Surfer Dude
+Vincennes, IN Uncle Sam
+Hatch, NM Uncle Sam
+Convoy, OH Uncle Sam
+Ottawa Lake, MI (odd) Uncle Sam

@@ -1,0 +1,14 @@
+Rocky Mountain, North Carolina, Muffler Men, 01/31/2017, Bunyan
+Kittanning, Pennsylvania, Muffler Men, 04/24/2017, Cowboy
+El Dorado, IL, Muffler Men, 09/19/2017, Big John
+Cross Plains, Tennessee, Muffler Men, 02/25/2018, Indian
+Gallatin, Tennessee, Muffler Men, 07/11/2018, Cowboy
+Kingsport, Tennessee, Muffler Men, 07/21/2018, Cowboy
+Southhaven, Mississippi, Muffler Men, 08/15/2018, Big John
+Edneyville, North Carolina, Muffler Men, 09/14/2018, Bunyan
+Bedford, Virginia, Muffler Men, 09/26/2018, Mini
+Roanoke, Virginia, Muffler Men, 09/26/2018, Bunyan
+Coeburn, Virginia, Muffler Men, 10/12/2018, Bunyan
+Cherokee, North Carolina, Muffler Men, 10/27/2018, Indian
+Dallas, Georgia, Muffler Men, 11/21/2018, Bunyan
+East Point, Georgia, Muffler Men, 11/22/2018, Bunyan

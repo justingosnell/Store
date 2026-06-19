@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: roadsidemap
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: NODE_OPTIONS=--dns-result-order=ipv4first npx tsx resolve-and-start.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: true
+      - key: SUPABASE_URL
+        sync: true
+      - key: SUPABASE_KEY
+        sync: true
+      - key: SUPABASE_BUCKET
+        sync: true
+      - key: SESSION_SECRET
+        sync: true
+      - key: INIT_ADMIN_USERNAME
+        sync: true
+      - key: INIT_ADMIN_PASSWORD
+        sync: true
+    nixpacks:
+      aptPackages:
+        - build-essential
+        - python3

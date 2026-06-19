@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1760501267086,
+      "tag": "0000_curious_warstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1760501267087,
+      "tag": "0001_add_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1760501267088,
+      "tag": "0002_add_missing_media_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1760501267089,
+      "tag": "0003_add_user_security_fields",
+      "breakpoints": true
+    }
+  ]
+}
