@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { corsMiddleware } from "./cors";
 
 function createLog() {
   return (message: string, source = "express") => {
@@ -29,30 +30,7 @@ process.on("unhandledRejection", (reason, promise) => {
 
 const app = express();
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://joebosse-app.web.app',
-    'https://joebosse-app.firebaseapp.com',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://backend-x65t.onrender.com'
-  ];
-  
-  if (allowedOrigins.includes(origin || '')) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
+app.use(corsMiddleware);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

@@ -46,6 +46,12 @@ function sanitizeInput(input: string): string {
 declare module "express-session" {
   interface SessionData {
     userId: string;
+    googleOAuthState?: string;
+    googleTokens?: {
+      accessToken: string;
+      refreshToken?: string;
+      expiresAt: number;
+    };
   }
 }
 
@@ -107,6 +113,116 @@ function slugify(value: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || `product-${Date.now()}`;
+}
+
+function getGoogleOAuthConfig(req?: Request) {
+  const clientId = process.env.GOOGLE_CLIENT_ID || "";
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+  const redirectUri =
+    process.env.GOOGLE_REDIRECT_URI ||
+    (req ? `${req.protocol}://${req.get("host")}/api/google/search-console/callback` : "");
+
+  return { clientId, clientSecret, redirectUri };
+}
+
+function getFrontendUrl() {
+  return (process.env.FRONTEND_URL || process.env.FRONTEND_URLS?.split(",")[0] || "http://localhost:3000").trim();
+}
+
+function getDateRange(days = 28) {
+  const end = new Date();
+  end.setDate(end.getDate() - 1);
+  const start = new Date(end);
+  start.setDate(start.getDate() - days + 1);
+  const format = (date: Date) => date.toISOString().slice(0, 10);
+  return { startDate: format(start), endDate: format(end) };
+}
+
+async function exchangeGoogleCodeForTokens(code: string, req: Request) {
+  const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig(req);
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Google token exchange failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json() as Promise<{ access_token: string; refresh_token?: string; expires_in: number }>;
+}
+
+async function refreshGoogleAccessToken(req: Request) {
+  const tokens = req.session.googleTokens;
+  if (!tokens) return undefined;
+  if (tokens.expiresAt > Date.now() + 60_000) return tokens.accessToken;
+  if (!tokens.refreshToken) return undefined;
+
+  const { clientId, clientSecret } = getGoogleOAuthConfig(req);
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: tokens.refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!response.ok) return undefined;
+
+  const refreshed = await response.json() as { access_token: string; expires_in: number };
+  req.session.googleTokens = {
+    ...tokens,
+    accessToken: refreshed.access_token,
+    expiresAt: Date.now() + refreshed.expires_in * 1000,
+  };
+
+  await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
+  return refreshed.access_token;
+}
+
+async function requireGoogleAccessToken(req: Request, res: Response) {
+  const accessToken = await refreshGoogleAccessToken(req);
+  if (!accessToken) {
+    res.status(401).json({ message: "Google Search Console is not connected" });
+    return undefined;
+  }
+  return accessToken;
+}
+
+async function googleApiRequest<T>(url: string, accessToken: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${accessToken}`);
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(url, { ...init, headers });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Google API request failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function mapSearchConsoleRow(row?: { clicks?: number; impressions?: number; ctr?: number; position?: number }) {
+  return {
+    clicks: Math.round(row?.clicks || 0),
+    impressions: Math.round(row?.impressions || 0),
+    ctr: row?.ctr || 0,
+    position: row?.position || 0,
+  };
 }
 
 async function syncCloudinaryMediaToLibrary() {
@@ -401,6 +517,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Change password error:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // ============ Google Search Console OAuth + Analytics Import ============
+
+  app.get("/api/google/search-console/status", requireAuth, async (req: Request, res: Response) => {
+    const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig(req);
+    res.json({
+      configured: Boolean(clientId && clientSecret && redirectUri),
+      connected: Boolean(req.session.googleTokens?.accessToken || req.session.googleTokens?.refreshToken),
+    });
+  });
+
+  app.get("/api/google/search-console/auth", requireAuth, async (req: Request, res: Response) => {
+    const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig(req);
+    if (!clientId || !clientSecret || !redirectUri) {
+      return res.status(500).json({
+        message: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI.",
+      });
+    }
+
+    const state = crypto.randomBytes(24).toString("hex");
+    req.session.googleOAuthState = state;
+    await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "https://www.googleapis.com/auth/webmasters.readonly",
+      access_type: "offline",
+      prompt: "consent",
+      state,
+    });
+
+    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  });
+
+  app.get("/api/google/search-console/callback", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { code, state, error } = req.query;
+      if (error) {
+        return res.redirect(`${getFrontendUrl()}/admin?google=denied`);
+      }
+      if (!code || typeof code !== "string" || state !== req.session.googleOAuthState) {
+        return res.redirect(`${getFrontendUrl()}/admin?google=invalid`);
+      }
+
+      const tokens = await exchangeGoogleCodeForTokens(code, req);
+      req.session.googleTokens = {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token || req.session.googleTokens?.refreshToken,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
+      };
+      req.session.googleOAuthState = undefined;
+      await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
+
+      res.redirect(`${getFrontendUrl()}/admin?google=connected`);
+    } catch (error) {
+      console.error("Google OAuth callback error:", error);
+      res.redirect(`${getFrontendUrl()}/admin?google=error`);
+    }
+  });
+
+  app.post("/api/google/search-console/disconnect", requireAuth, async (req: Request, res: Response) => {
+    req.session.googleTokens = undefined;
+    req.session.googleOAuthState = undefined;
+    await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
+    res.json({ message: "Google Search Console disconnected" });
+  });
+
+  app.get("/api/google/search-console/properties", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const accessToken = await requireGoogleAccessToken(req, res);
+      if (!accessToken) return;
+
+      const data = await googleApiRequest<{ siteEntry?: Array<{ siteUrl: string; permissionLevel: string }> }>(
+        "https://www.googleapis.com/webmasters/v3/sites",
+        accessToken
+      );
+
+      res.json({
+        properties: (data.siteEntry || []).map((site) => ({
+          siteUrl: site.siteUrl,
+          permissionLevel: site.permissionLevel,
+        })),
+      });
+    } catch (error) {
+      console.error("Google properties error:", error);
+      res.status(500).json({ message: "Failed to load Google Search Console properties" });
+    }
+  });
+
+  app.get("/api/google/search-console/metrics", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const accessToken = await requireGoogleAccessToken(req, res);
+      if (!accessToken) return;
+
+      const rawSiteUrl = typeof req.query.siteUrl === "string" ? req.query.siteUrl : "";
+      if (!rawSiteUrl) {
+        return res.status(400).json({ message: "siteUrl is required" });
+      }
+
+      const { startDate, endDate } = getDateRange(28);
+      const encodedSiteUrl = encodeURIComponent(rawSiteUrl);
+      const endpoint = `https://www.googleapis.com/webmasters/v3/sites/${encodedSiteUrl}/searchAnalytics/query`;
+
+      const [summaryData, pageData] = await Promise.all([
+        googleApiRequest<{ rows?: Array<{ clicks: number; impressions: number; ctr: number; position: number }> }>(endpoint, accessToken, {
+          method: "POST",
+          body: JSON.stringify({
+            startDate,
+            endDate,
+            type: "web",
+            rowLimit: 1,
+          }),
+        }),
+        googleApiRequest<{ rows?: Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> }>(endpoint, accessToken, {
+          method: "POST",
+          body: JSON.stringify({
+            startDate,
+            endDate,
+            type: "web",
+            dimensions: ["page"],
+            rowLimit: 10,
+          }),
+        }),
+      ]);
+
+      res.json({
+        siteUrl: rawSiteUrl,
+        startDate,
+        endDate,
+        summary: mapSearchConsoleRow(summaryData.rows?.[0]),
+        pages: (pageData.rows || []).map((row) => ({
+          page: row.keys?.[0] || "",
+          ...mapSearchConsoleRow(row),
+        })),
+      });
+    } catch (error) {
+      console.error("Google metrics error:", error);
+      res.status(500).json({ message: "Failed to import Search Console metrics" });
     }
   });
 
