@@ -27,7 +27,6 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MedusaProductsExample } from "@/components/MedusaProductsExample";
 import { getApiUrl } from "@/lib/api";
 import type { Product } from "@shared/schema";
 import heroBg from "./apply-schema-fix.png";
@@ -418,8 +417,6 @@ export default function Home() {
           </div>
         )}
       </section>
-
-      <MedusaProductsExample />
 
       <section className="relative mt-20 overflow-hidden bg-white py-16">
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
