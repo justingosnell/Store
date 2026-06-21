@@ -31,7 +31,7 @@ Create `client/.env` when you are ready:
 VITE_API_URL=http://localhost:3000
 ```
 
-`VITE_API_URL` can stay blank only when the frontend and Express API are served from the same domain. On Vercel, set it to the deployed Express backend URL.
+`VITE_API_URL` can stay blank when the frontend and Express API are served from the same domain. For the Render deployment in this repo, leave it blank.
 
 ## Install Dependencies
 
@@ -57,7 +57,8 @@ The admin login belongs to the Express app.
 
 ## Production Notes
 
-- Deploy the frontend and Express backend separately if your host requires separate services.
-- Use the root `.env.example` values for the backend service.
-- Use `client/.env.example` for the frontend service.
+- Deploy the repo root to Render as one Node web service.
+- Use `npm install && npm run build` as the Render build command.
+- Use `NODE_OPTIONS=--dns-result-order=ipv4first npx tsx resolve-and-start.ts` as the Render start command.
+- Use the root `.env.example` values for Render environment variables.
 - Drizzle remains the database layer for the custom app.

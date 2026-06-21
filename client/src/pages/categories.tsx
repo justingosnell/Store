@@ -73,7 +73,7 @@ export default function Categories() {
   // Update category mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: InsertCategory }) => {
-      const response = await fetch(`/api/categories/${id}`, {
+      const response = await fetch(getApiUrl(`/api/categories/${id}`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -106,7 +106,7 @@ export default function Categories() {
   // Delete category mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/categories/${id}`, {
+      const response = await fetch(getApiUrl(`/api/categories/${id}`), {
         method: "DELETE",
         credentials: "include",
       });

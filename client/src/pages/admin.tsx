@@ -1,24 +1,33 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
+  BadgePercent,
+  Bell,
   Boxes,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  ClipboardList,
+  Download,
   Home,
   Image,
-  LogOut,
+  Megaphone,
   PackagePlus,
   Pencil,
   Search,
   SearchCheck,
+  SlidersHorizontal,
   ShoppingBag,
   Sparkles,
   Store,
   Trash2,
   Upload,
+  UserCircle,
+  Users,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -33,6 +42,37 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiUrl } from "@/lib/api";
 import { MediaLibraryPanel } from "@/components/MediaLibraryPanel";
 import type { InsertProduct, Media, Product } from "@shared/schema";
+
+type AdminSection = "home" | "orders" | "products" | "customers" | "analytics" | "marketing" | "discounts";
+
+type GoogleSearchConsoleStatus = {
+  configured: boolean;
+  connected: boolean;
+};
+
+type GoogleSearchConsoleProperty = {
+  siteUrl: string;
+  permissionLevel: string;
+};
+
+type GoogleSearchConsoleMetrics = {
+  siteUrl: string;
+  startDate: string;
+  endDate: string;
+  summary: {
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  };
+  pages: Array<{
+    page: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+};
 
 const emptyForm: InsertProduct = {
   title: "",
@@ -207,6 +247,7 @@ export default function Admin() {
   const productImageInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [activeSection, setActiveSection] = useState<AdminSection>("products");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -235,8 +276,31 @@ export default function Admin() {
     const inventory = products.reduce((sum, product) => sum + (product.inventory || 0), 0);
     const value = products.reduce((sum, product) => sum + Number(product.price || 0) * (product.inventory || 0), 0);
     const seoReady = products.filter((product) => getSeoScore(productToForm(product)).score >= 75).length;
-    return { active, inventory, value, seoReady };
+    const lowInventory = products.filter((product) => product.inventory <= 5).length;
+    return { active, inventory, value, seoReady, lowInventory };
   }, [products]);
+
+  const newOrderNotifications = 0;
+  const notificationCount = stats.lowInventory + newOrderNotifications;
+
+  const adminNav = [
+    { id: "home", label: "Home", icon: Home },
+    { id: "orders", label: "Orders", icon: ClipboardList },
+    { id: "products", label: "Products", icon: Boxes },
+    { id: "customers", label: "Customers", icon: Users },
+    { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "marketing", label: "Marketing", icon: Megaphone },
+    { id: "discounts", label: "Discounts", icon: BadgePercent },
+  ] satisfies Array<{ id: AdminSection; label: string; icon: typeof Home }>;
+
+  const sectionTabs = [
+    { id: "products", label: "All Products" },
+    { id: "orders", label: "Open" },
+    { id: "analytics", label: "Low Stock" },
+    { id: "marketing", label: "Featured" },
+    { id: "discounts", label: "SEO Ready" },
+    { id: "customers", label: "Customers" },
+  ] satisfies Array<{ id: AdminSection; label: string }>;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -366,145 +430,243 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f3] text-[#202223]">
-      <header className="sticky top-0 z-40 border-b border-[#dde0dc] bg-white/95 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-[#008060] text-white">
-              <Store className="h-5 w-5" />
+    <div className="min-h-screen bg-[#f3f5f7] p-3 text-[#2f3135] sm:p-5">
+      <header className="mb-5 rounded-lg border border-[#d5dadd] bg-white shadow-sm">
+        <div className="flex min-h-[76px] items-center justify-between gap-3 px-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#008060] text-white">
+              <Store className="h-6 w-6" />
             </span>
-            <div>
-              <h1 className="text-lg font-black">Little Nest Admin</h1>
-              <p className="text-xs text-[#6d7175]">Signed in as {user?.username}</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-black text-black">Tiny Treasures Admin Panel</h1>
+              <p className="text-xs text-[#8b8e92]">Signed in as {user?.username}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 text-[#7d8185]">
             <Link href="/">
-              <Button variant="outline" className="border-[#c9cccf] bg-white">
-                <Home className="mr-2 h-4 w-4" />
-                Storefront
+              <Button variant="ghost" size="icon" className="h-9 w-9" title="Storefront">
+                <Store className="h-4 w-4" />
               </Button>
             </Link>
-            <Button variant="outline" className="border-[#c9cccf] bg-white" onClick={logout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9 text-[#ff4f6d]"
+              title={`${notificationCount} notifications: ${newOrderNotifications} new orders, ${stats.lowInventory} low inventory`}
+            >
+              <Bell className="h-4 w-4 fill-current" />
+              {notificationCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#d72c0d] px-1 text-[10px] font-black leading-none text-white ring-2 ring-white">
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
+            </Button>
+            <Button variant="ghost" size="icon" className="h-10 w-10 overflow-hidden rounded-full border border-[#d5dadd] bg-white" onClick={logout} title="Logout">
+              <UserCircle className="h-7 w-7 text-[#123a5a]" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-3xl font-black">Products</h2>
-            <p className="mt-1 text-[#6d7175]">Manage toys, burp cloths, baby books, inventory, pricing, and publish status.</p>
-          </div>
-          <Button className="bg-[#008060] text-white hover:bg-[#006e52]" onClick={openCreateDialog}>
-            <PackagePlus className="mr-2 h-4 w-4" />
-            Add product
-          </Button>
-        </div>
+      <div className="grid gap-5 lg:grid-cols-[264px_minmax(0,1fr)]">
+        <aside className="rounded-lg bg-[#123a5a] p-6 shadow-sm lg:min-h-[calc(100vh-136px)]">
+          <nav className="grid gap-3">
+            {adminNav.map((item) => {
+              const Icon = item.icon;
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`flex h-12 items-center gap-4 rounded-md px-4 text-left text-[15px] font-semibold transition ${
+                    active ? "bg-white text-[#123a5a] shadow-sm" : "text-white/90 hover:bg-white/10"
+                  }`}
+                  onClick={() => setActiveSection(item.id)}
+                >
+                  <Icon className={`h-5 w-5 ${active ? "text-[#008060]" : "text-[#b8d0dd]"}`} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-        <section className="mb-6 grid gap-4 md:grid-cols-4">
-          <MetricCard icon={<ShoppingBag className="h-5 w-5" />} label="Active products" value={String(stats.active)} />
-          <MetricCard icon={<Boxes className="h-5 w-5" />} label="Units in stock" value={String(stats.inventory)} />
-          <MetricCard icon={<BarChart3 className="h-5 w-5" />} label="Inventory value" value={money(stats.value)} />
-          <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="SEO ready" value={`${stats.seoReady}/${products.length}`} />
-        </section>
-
-        <section className="rounded-lg border border-[#dde0dc] bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-[#dde0dc] p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full max-w-lg">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-[#8c9196]" />
-              <Input
-                className="h-11 border-[#c9cccf] pl-9"
-                placeholder="Search products, SKUs, categories"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
+        <main className="min-w-0 pb-8">
+          <section className="relative mb-8 overflow-hidden rounded-lg bg-[#f3f5f7] px-1 py-5">
+            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-2/3 text-[#123a5a] opacity-20 md:block">
+              <ShoppingBag className="absolute left-[8%] top-24 h-10 w-10 rotate-[-18deg]" />
+              <Boxes className="absolute left-[28%] top-10 h-7 w-7 rotate-[14deg]" />
+              <BadgePercent className="absolute left-[38%] top-28 h-8 w-8 rotate-[12deg]" />
+              <PackagePlus className="absolute left-[53%] top-16 h-11 w-11 rotate-[-10deg]" />
+              <ClipboardList className="absolute left-[70%] top-28 h-7 w-7 rotate-[8deg]" />
+              <SearchCheck className="absolute right-[6%] top-12 h-8 w-8 rotate-[-16deg]" />
             </div>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-11 w-full border-[#c9cccf] lg:w-44">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative z-10 max-w-xl">
+              <h2 className="text-4xl font-black tracking-normal text-[#34363a] md:text-5xl">Hi, Welcome !</h2>
+              <p className="mt-2 text-xl text-[#8f9296]">You're off to a great start.</p>
+              <div className="relative mt-9 max-w-[280px]">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a5a9]" />
+                <Input
+                  className="h-9 rounded-md border-[#bfc5c8] bg-white pl-9 text-sm shadow-sm"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+            </div>
+          </section>
+
+          <div className="mb-7 overflow-x-auto border-b border-[#cdd2d5]">
+            <div className="flex min-w-max gap-8 px-1">
+              {sectionTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`border-b-2 px-1 pb-4 text-sm font-semibold transition ${
+                    activeSection === tab.id ? "border-[#3578ff] text-black" : "border-transparent text-black hover:border-[#9ab9ff]"
+                  }`}
+                  onClick={() => setActiveSection(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] text-left text-sm">
-              <thead className="bg-[#fafbfb] text-xs uppercase text-[#6d7175]">
-                <tr>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Inventory</th>
-                  <th className="px-4 py-3">SEO</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Price</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={7}>Loading products...</td>
-                  </tr>
-                ) : filteredProducts.length === 0 ? (
-                  <tr>
-                    <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={7}>No products found.</td>
-                  </tr>
-                ) : (
-                  filteredProducts.map((product) => (
-                    <tr key={product.id} className="border-t border-[#edf0ed]">
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="grid h-12 w-12 place-items-center rounded-md bg-[#e8f3ee] text-[#008060]">
-                            <ShoppingBag className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <div className="font-black">{product.title}</div>
-                            <div className="text-xs text-[#6d7175]">{product.sku || product.handle}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <StatusBadge status={product.status} />
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={product.inventory <= 5 ? "font-bold text-[#b95000]" : "font-bold"}>
-                          {product.inventory}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <SeoBadge score={getSeoScore(productToForm(product)).score} />
-                      </td>
-                      <td className="px-4 py-4">{product.category}</td>
-                      <td className="px-4 py-4">{money(product.price)}</td>
-                      <td className="px-4 py-4">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" className="border-[#c9cccf] bg-white" onClick={() => openEditDialog(product)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button variant="outline" size="sm" className="border-[#c9cccf] bg-white text-[#b42318]" onClick={() => deleteMutation.mutate(product.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+          {activeSection === "products" ? (
+            <>
+              <section className="mb-6 grid gap-4 md:grid-cols-4">
+                <MetricCard icon={<ShoppingBag className="h-5 w-5" />} label="Active products" value={String(stats.active)} />
+                <MetricCard icon={<Boxes className="h-5 w-5" />} label="Units in stock" value={String(stats.inventory)} />
+                <MetricCard icon={<BarChart3 className="h-5 w-5" />} label="Inventory value" value={money(stats.value)} />
+                <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="SEO ready" value={`${stats.seoReady}/${products.length}`} />
+              </section>
+
+              <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-[#dfe3e6] p-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="relative w-full max-w-[276px]">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a5a9]" />
+                    <Input
+                      className="h-8 rounded-md border-[#c7cccf] bg-white pl-9 text-xs"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[#65696d]">
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger className="h-8 w-36 border-[#bfc5c8] bg-white px-3 text-xs shadow-sm">
+                        <SlidersHorizontal className="mr-2 h-4 w-4" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Filters</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="sm" className="h-8 gap-2 px-2 text-xs font-normal text-[#65696d]">
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                    <Button className="h-8 bg-[#008060] px-3 text-xs text-white hover:bg-[#006e52]" onClick={openCreateDialog}>
+                      <PackagePlus className="mr-2 h-4 w-4" />
+                      Add product
+                    </Button>
+                    <div className="ml-auto flex items-center gap-2 text-xs">
+                      <Button variant="outline" size="icon" className="h-7 w-7 border-[#d8dcdf] bg-white">
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span>Page</span>
+                      <span className="rounded border border-[#d8dcdf] px-2 py-1">1</span>
+                      <span>of 1</span>
+                      <Button variant="outline" size="icon" className="h-7 w-7 border-[#d8dcdf] bg-white">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] border-collapse text-left text-xs">
+                    <thead className="text-[11px] uppercase text-[#34363a]">
+                      <tr className="border-b border-[#dfe3e6]">
+                        <th className="w-20 border-r border-[#dfe3e6] px-8 py-5">
+                          <span className="block h-4 w-4 rounded border border-[#d0d5d8]" />
+                        </th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">Product</th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">Status</th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">Inventory</th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">SEO</th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">Category</th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">Price</th>
+                        <th className="px-6 py-5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[#686c71]">
+                      {isLoading ? (
+                        <tr>
+                          <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={8}>Loading products...</td>
+                        </tr>
+                      ) : filteredProducts.length === 0 ? (
+                        <tr>
+                          <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={8}>No products found.</td>
+                        </tr>
+                      ) : (
+                        filteredProducts.map((product) => (
+                          <tr key={product.id} className="border-b border-[#e5e8ea] last:border-b-0">
+                            <td className="border-r border-[#e5e8ea] px-8 py-5">
+                              <span className="block h-4 w-4 rounded border border-[#d0d5d8]" />
+                            </td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                              <button type="button" className="font-semibold text-[#008060]" onClick={() => openEditDialog(product)}>
+                                {product.title}
+                              </button>
+                              <div className="mt-1 text-[11px] text-[#8c9196]">{product.sku || product.handle || product.id}</div>
+                            </td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                              <StatusBadge status={product.status} />
+                            </td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                              <span className={product.inventory <= 5 ? "font-semibold text-[#b95000]" : "font-semibold text-[#008060]"}>
+                                {product.inventory}
+                              </span>
+                            </td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                              <SeoBadge score={getSeoScore(productToForm(product)).score} />
+                            </td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5">{product.category}</td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5 text-[#34363a]">{money(product.price)}</td>
+                            <td className="px-6 py-5">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" className="h-8 px-2 text-[#34363a]" onClick={() => openEditDialog(product)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 px-2 text-[#ff5d75]" onClick={() => deleteMutation.mutate(product.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          ) : (
+            <AdminSectionPanel
+              activeSection={activeSection}
+              stats={stats}
+              productCount={products.length}
+              onAddProduct={() => {
+                setActiveSection("products");
+                openCreateDialog();
+              }}
+            />
+          )}
+        </main>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
@@ -573,7 +735,7 @@ export default function Admin() {
             </div>
             <section className="rounded-lg border border-[#dde0dc] bg-white p-4">
               <div className="mb-3">
-                <h3 className="font-black text-[#202223]">Product description</h3>
+                <h3 className="font-black text-[#34363a]">Product description</h3>
                 <p className="text-sm text-[#6d7175]">Tell shoppers what makes this item special, safe, and giftable.</p>
               </div>
               <Textarea
@@ -589,7 +751,7 @@ export default function Admin() {
             <section className="rounded-lg border border-[#dde0dc] bg-white p-4">
               <div className="mb-4">
                 <div>
-                  <h3 className="font-black text-[#202223]">Product image</h3>
+                  <h3 className="font-black text-[#34363a]">Product image</h3>
                   <p className="text-sm text-[#6d7175]">Upload to Cloudinary or choose an existing image from your media library.</p>
                 </div>
               </div>
@@ -614,7 +776,7 @@ export default function Admin() {
                   />
                   <button
                     type="button"
-                    className="flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#008060] bg-[#f1f8f5] p-6 text-center transition hover:bg-[#e8f3ee] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#008060] bg-[#eef5f9] p-6 text-center transition hover:bg-[#e6eef3] disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => productImageInputRef.current?.click()}
                     disabled={productImageUploadMutation.isPending}
                   >
@@ -627,12 +789,12 @@ export default function Admin() {
                     <span className="mt-1 text-sm text-[#6d7175]">Saves the image to Cloudinary and applies it to this product.</span>
                   </button>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button type="button" variant="outline" className="border-[#c9cccf] bg-white" onClick={() => setMediaLibraryOpen(true)}>
+                    <Button type="button" variant="outline" className="border-[#b8d0dd] bg-[#eef5f9] font-semibold text-[#123a5a]" onClick={() => setMediaLibraryOpen(true)}>
                       <Image className="mr-2 h-4 w-4" />
                       Choose from library
                     </Button>
                     {form.imageUrl && (
-                      <Button type="button" variant="ghost" className="text-[#b42318] hover:bg-[#fdecea] hover:text-[#b42318]" onClick={() => updateForm("imageUrl", "")}>
+                      <Button type="button" variant="ghost" className="bg-[#fdecea] font-semibold text-[#b42318]" onClick={() => updateForm("imageUrl", "")}>
                         Remove image
                       </Button>
                     )}
@@ -642,8 +804,8 @@ export default function Admin() {
             </section>
             <SeoPanel form={form} onChange={updateForm} />
             <div className="flex justify-end gap-2 border-t border-[#dde0dc] pt-4">
-              <Button type="button" variant="outline" className="border-[#c9cccf] bg-white" onClick={closeDialog}>Cancel</Button>
-              <Button type="submit" className="bg-[#008060] text-white hover:bg-[#006e52]" disabled={saveMutation.isPending}>
+              <Button type="button" variant="outline" className="border-[#b8d0dd] bg-[#eef5f9] font-semibold text-[#123a5a]" onClick={closeDialog}>Cancel</Button>
+              <Button type="submit" className="bg-[#006e52] font-semibold text-white" disabled={saveMutation.isPending}>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 {saveMutation.isPending ? "Saving..." : "Save product"}
               </Button>
@@ -666,17 +828,336 @@ export default function Admin() {
 function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-lg border border-[#dde0dc] bg-white p-4 shadow-sm">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-[#e8f3ee] text-[#008060]">{icon}</div>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-[#eef5f9] text-[#123a5a]">{icon}</div>
       <div className="text-2xl font-black">{value}</div>
       <div className="text-sm text-[#6d7175]">{label}</div>
     </div>
   );
 }
 
+function AdminSectionPanel({
+  activeSection,
+  stats,
+  productCount,
+  onAddProduct,
+}: {
+  activeSection: AdminSection;
+  stats: { active: number; inventory: number; value: number; seoReady: number };
+  productCount: number;
+  onAddProduct: () => void;
+}) {
+  const titleMap: Record<AdminSection, string> = {
+    home: "Home",
+    orders: "Orders",
+    products: "Products",
+    customers: "Customers",
+    analytics: "Analytics",
+    marketing: "Marketing",
+    discounts: "Discounts",
+  };
+
+  if (activeSection === "home") {
+    return (
+      <section className="rounded-lg border border-[#cdd2d5] bg-white p-6 shadow-sm">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-2xl font-black text-[#34363a]">Store overview</h3>
+            <p className="mt-1 text-sm text-[#8f9296]">Products, inventory, and SEO readiness at a glance.</p>
+          </div>
+          <Button className="bg-[#008060] text-white hover:bg-[#006e52]" onClick={onAddProduct}>
+            <PackagePlus className="mr-2 h-4 w-4" />
+            Add product
+          </Button>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard icon={<ShoppingBag className="h-5 w-5" />} label="Active products" value={String(stats.active)} />
+          <MetricCard icon={<Boxes className="h-5 w-5" />} label="Units in stock" value={String(stats.inventory)} />
+          <MetricCard icon={<BarChart3 className="h-5 w-5" />} label="Inventory value" value={money(stats.value)} />
+          <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="SEO ready" value={`${stats.seoReady}/${productCount}`} />
+        </div>
+      </section>
+    );
+  }
+
+  if (activeSection === "orders") {
+    const orders = [
+      { id: "#1007", date: "06/18/2026 10:08AM", customer: "Avery Johnson", payment: "Paid", fulfillment: "Unfulfilled", total: "$68.00" },
+      { id: "#1006", date: "06/17/2026 02:34PM", customer: "Maya Thompson", payment: "Authorized", fulfillment: "Partially Fulfilled", total: "$124.50" },
+      { id: "#1005", date: "06/16/2026 09:41AM", customer: "Elliot Brooks", payment: "Paid", fulfillment: "Fulfilled", total: "$42.00" },
+      { id: "#1004", date: "06/15/2026 04:20PM", customer: "Nora Williams", payment: "Paid", fulfillment: "Unfulfilled", total: "$89.99" },
+    ];
+
+    return (
+      <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#dfe3e6] p-4">
+          <h3 className="font-black text-[#34363a]">Recent orders</h3>
+          <Button variant="ghost" size="sm" className="gap-2 text-xs text-[#65696d]">
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-xs">
+            <thead className="text-[11px] uppercase text-[#34363a]">
+              <tr className="border-b border-[#dfe3e6]">
+                <th className="px-6 py-5">Order</th>
+                <th className="px-6 py-5">Date</th>
+                <th className="px-6 py-5">Customer</th>
+                <th className="px-6 py-5">Payment Status</th>
+                <th className="px-6 py-5">Fulfillment Status</th>
+                <th className="px-6 py-5">Total</th>
+              </tr>
+            </thead>
+            <tbody className="text-[#686c71]">
+              {orders.map((order) => (
+                <tr key={order.id} className="border-b border-[#e5e8ea] last:border-b-0">
+                  <td className="px-6 py-5 font-semibold text-[#008060]">{order.id}</td>
+                  <td className="px-6 py-5">{order.date}</td>
+                  <td className="px-6 py-5">{order.customer}</td>
+                  <td className={`px-6 py-5 ${order.payment === "Paid" ? "text-[#008060]" : "text-[#b95000]"}`}>{order.payment}</td>
+                  <td className={`px-6 py-5 ${order.fulfillment === "Fulfilled" ? "text-[#008060]" : order.fulfillment === "Partially Fulfilled" ? "text-[#b42318]" : "text-[#b95000]"}`}>
+                    {order.fulfillment}
+                  </td>
+                  <td className="px-6 py-5 text-[#34363a]">{order.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  }
+
+  if (activeSection === "analytics") {
+    return <AnalyticsImportPanel />;
+  }
+
+  return (
+    <section className="rounded-lg border border-[#cdd2d5] bg-white p-8 shadow-sm">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div>
+          <h3 className="text-2xl font-black text-[#34363a]">{titleMap[activeSection]}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#7c8084]">
+            This workspace is ready for the custom ecommerce tools we add next. The sidebar and tab navigation are wired, so each area can grow into its own full CRUD screen.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <MetricCard icon={<ShoppingBag className="h-5 w-5" />} label="Products" value={String(productCount)} />
+            <MetricCard icon={<Boxes className="h-5 w-5" />} label="Inventory" value={String(stats.inventory)} />
+            <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="SEO ready" value={`${stats.seoReady}/${productCount}`} />
+          </div>
+        </div>
+        <div className="rounded-lg border border-[#c9cccf] bg-[#eef5f9] p-5">
+          <h4 className="font-black text-[#34363a]">Next action</h4>
+          <p className="mt-2 text-sm leading-6 text-[#59605d]">Add or refine product data before connecting customer, order, and promotion workflows.</p>
+          <Button className="mt-5 bg-[#008060] text-white hover:bg-[#006e52]" onClick={onAddProduct}>
+            <PackagePlus className="mr-2 h-4 w-4" />
+            Add product
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AnalyticsImportPanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [selectedSiteUrl, setSelectedSiteUrl] = useState("");
+
+  const statusQuery = useQuery<GoogleSearchConsoleStatus>({
+    queryKey: ["google-search-console-status"],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/api/google/search-console/status"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load Google connection status");
+      return response.json();
+    },
+  });
+
+  const propertiesQuery = useQuery<{ properties: GoogleSearchConsoleProperty[] }>({
+    queryKey: ["google-search-console-properties"],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/api/google/search-console/properties"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load Search Console properties");
+      return response.json();
+    },
+    enabled: Boolean(statusQuery.data?.connected),
+  });
+
+  useEffect(() => {
+    if (!selectedSiteUrl && propertiesQuery.data?.properties?.length) {
+      setSelectedSiteUrl(propertiesQuery.data.properties[0].siteUrl);
+    }
+  }, [propertiesQuery.data?.properties, selectedSiteUrl]);
+
+  const metricsQuery = useQuery<GoogleSearchConsoleMetrics>({
+    queryKey: ["google-search-console-metrics", selectedSiteUrl],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl(`/api/google/search-console/metrics?siteUrl=${encodeURIComponent(selectedSiteUrl)}`), {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to import Search Console metrics");
+      }
+      return response.json();
+    },
+    enabled: Boolean(statusQuery.data?.connected && selectedSiteUrl),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(getApiUrl("/api/google/search-console/disconnect"), {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to disconnect Google");
+      return response.json();
+    },
+    onSuccess: () => {
+      setSelectedSiteUrl("");
+      queryClient.invalidateQueries({ queryKey: ["google-search-console-status"] });
+      queryClient.removeQueries({ queryKey: ["google-search-console-properties"] });
+      queryClient.removeQueries({ queryKey: ["google-search-console-metrics"] });
+      toast({ title: "Google disconnected", description: "Search Console data import has been disconnected." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not disconnect Google", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const connectToGoogle = () => {
+    window.location.href = getApiUrl("/api/google/search-console/auth");
+  };
+
+  const metrics = metricsQuery.data;
+  const configured = statusQuery.data?.configured ?? false;
+  const connected = statusQuery.data?.connected ?? false;
+
+  return (
+    <section className="space-y-5">
+      <div className="rounded-lg border border-[#cdd2d5] bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 className="text-2xl font-black text-[#34363a]">Google search analytics</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#7c8084]">
+              Connect a Google account with access to Search Console to import impressions, clicks, CTR, and average position for your store.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {connected ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#b8d0dd] bg-[#eef5f9] font-semibold text-[#123a5a]"
+                onClick={() => disconnectMutation.mutate()}
+                disabled={disconnectMutation.isPending}
+              >
+                Disconnect Google
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="bg-[#008060] font-semibold text-white hover:bg-[#006e52]"
+                onClick={connectToGoogle}
+                disabled={!configured}
+              >
+                Connect Google account
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {!configured && (
+          <div className="mt-5 rounded-lg border border-[#ffd59d] bg-[#fff4e5] p-4 text-sm text-[#8a4b00]">
+            Google OAuth is not configured yet. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` to the Express backend environment.
+          </div>
+        )}
+
+        {connected && (
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+            <Field label="Search Console property">
+              <Select value={selectedSiteUrl} onValueChange={setSelectedSiteUrl}>
+                <SelectTrigger className="border-[#c9cccf] bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(propertiesQuery.data?.properties || []).map((property) => (
+                    <SelectItem key={property.siteUrl} value={property.siteUrl}>
+                      {property.siteUrl}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Button
+              type="button"
+              className="bg-[#008060] font-semibold text-white hover:bg-[#006e52]"
+              onClick={() => metricsQuery.refetch()}
+              disabled={!selectedSiteUrl || metricsQuery.isFetching}
+            >
+              {metricsQuery.isFetching ? "Importing..." : "Import analytics"}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {metrics && (
+        <>
+          <section className="grid gap-4 md:grid-cols-4">
+            <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="Impressions" value={metrics.summary.impressions.toLocaleString()} />
+            <MetricCard icon={<ShoppingBag className="h-5 w-5" />} label="Clicks" value={metrics.summary.clicks.toLocaleString()} />
+            <MetricCard icon={<BarChart3 className="h-5 w-5" />} label="CTR" value={`${(metrics.summary.ctr * 100).toFixed(2)}%`} />
+            <MetricCard icon={<BadgePercent className="h-5 w-5" />} label="Avg. position" value={metrics.summary.position ? metrics.summary.position.toFixed(1) : "0.0"} />
+          </section>
+
+          <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">
+            <div className="border-b border-[#dfe3e6] p-4">
+              <h3 className="font-black text-[#34363a]">Imported page performance</h3>
+              <p className="mt-1 text-xs text-[#7c8084]">
+                {metrics.siteUrl} · {metrics.startDate} to {metrics.endDate}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[860px] text-left text-xs">
+                <thead className="text-[11px] uppercase text-[#34363a]">
+                  <tr className="border-b border-[#dfe3e6]">
+                    <th className="px-6 py-5">Page</th>
+                    <th className="px-6 py-5">Impressions</th>
+                    <th className="px-6 py-5">Clicks</th>
+                    <th className="px-6 py-5">CTR</th>
+                    <th className="px-6 py-5">Current Position</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[#686c71]">
+                  {metrics.pages.length === 0 ? (
+                    <tr>
+                      <td className="px-6 py-8 text-center" colSpan={5}>No Search Console rows returned for this date range.</td>
+                    </tr>
+                  ) : (
+                    metrics.pages.map((page) => (
+                      <tr key={page.page} className="border-b border-[#e5e8ea] last:border-b-0">
+                        <td className="max-w-[420px] truncate px-6 py-5 font-semibold text-[#008060]">{page.page}</td>
+                        <td className="px-6 py-5">{page.impressions.toLocaleString()}</td>
+                        <td className="px-6 py-5">{page.clicks.toLocaleString()}</td>
+                        <td className="px-6 py-5">{(page.ctr * 100).toFixed(2)}%</td>
+                        <td className="px-6 py-5">{page.position ? page.position.toFixed(1) : "0.0"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      )}
+    </section>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const className =
     status === "active"
-      ? "bg-[#e8f3ee] text-[#008060]"
+      ? "border border-[#b8d0dd] bg-[#eef5f9] text-[#008060]"
       : status === "draft"
         ? "bg-[#fff4e5] text-[#b95000]"
         : "bg-[#edeff1] text-[#6d7175]";
@@ -687,7 +1168,7 @@ function StatusBadge({ status }: { status: string }) {
 function SeoBadge({ score }: { score: number }) {
   const className =
     score >= 75
-      ? "bg-[#e8f3ee] text-[#008060]"
+      ? "border border-[#b8d0dd] bg-[#eef5f9] text-[#008060]"
       : score >= 45
         ? "bg-[#fff4e5] text-[#b95000]"
         : "bg-[#fdecea] text-[#b42318]";
@@ -710,7 +1191,7 @@ function SeoPanel({
   const suggestedSeo = generateSeoFields(form);
   const statusClass =
     analysis.status === "Good"
-      ? "bg-[#e8f3ee] text-[#008060] border-[#a8d5c2]"
+      ? "bg-[#eef5f9] text-[#008060] border-[#b8d0dd]"
       : analysis.status === "Needs work"
         ? "bg-[#fff4e5] text-[#b95000] border-[#ffd59d]"
         : "bg-[#fdecea] text-[#b42318] border-[#f5b5ad]";
@@ -723,12 +1204,12 @@ function SeoPanel({
         onClick={() => setOpen((current) => !current)}
       >
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 grid h-8 w-8 place-items-center rounded-md bg-[#e8f3ee] text-[#008060]">
+          <span className="mt-0.5 grid h-8 w-8 place-items-center rounded-md bg-[#eef5f9] text-[#123a5a]">
             <SearchCheck className="h-5 w-5" />
           </span>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-black">SEO plugin</h3>
+              <h3 className="text-lg font-black text-[#34363a]">SEO plugin</h3>
               {open ? <ChevronUp className="h-4 w-4 text-[#6d7175]" /> : <ChevronDown className="h-4 w-4 text-[#6d7175]" />}
             </div>
             <p className="mt-1 text-sm text-[#6d7175]">Click to view Yoast-style search preview and product SEO checks.</p>
@@ -778,7 +1259,7 @@ function SeoPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-[#c9cccf] bg-white font-bold text-[#123a5a] hover:bg-[#eef5f9] sm:w-auto"
+                className="w-full border-[#b8d0dd] bg-[#eef5f9] font-bold text-[#123a5a] sm:w-auto"
                 onClick={() => {
                   onChange("focusKeyword", suggestedSeo.focusKeyword);
                   onChange("seoTitle", suggestedSeo.seoTitle);
@@ -810,7 +1291,7 @@ function SeoPanel({
                         }`}
                       />
                       <div>
-                        <div className="text-sm font-bold text-[#123a5a]">{check.label}</div>
+                        <div className="text-sm font-bold text-[#34363a]">{check.label}</div>
                         <div className="text-xs leading-5 text-[#6d7175]">{check.detail}</div>
                       </div>
                     </div>
@@ -828,7 +1309,7 @@ function SeoPanel({
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
-      <Label className="font-semibold text-[#123a5a]">{label}</Label>
+      <Label className="font-bold text-[#34363a]">{label}</Label>
       {children}
     </div>
   );

@@ -527,6 +527,7 @@ export class MemStorage implements IStorage {
       lastPasswordChange: new Date().toISOString(),
       mustChangePassword: "false",
       failedLoginAttempts: "0",
+      isLocked: "false",
     };
     this.users.set(id, updatedUser);
     return true;
@@ -1130,6 +1131,7 @@ export class DbStorage implements IStorage {
         lastPasswordChange: now,
         mustChangePassword: "false",
         failedLoginAttempts: "0",
+        isLocked: "false",
       })
       .where(eq(users.id, id))
       .returning();
@@ -1410,9 +1412,11 @@ export async function ensureStorageReady(): Promise<void> {
   // Initialize default admin account from environment variables
   const adminUsername = process.env.INIT_ADMIN_USERNAME;
   const adminPassword = process.env.INIT_ADMIN_PASSWORD;
+  const shouldResetAdminPassword = process.env.RESET_ADMIN_PASSWORD === "true";
 
   console.log(`📋 INIT_ADMIN_USERNAME: ${adminUsername ? "✓ Set" : "✗ Not set"}`);
   console.log(`📋 INIT_ADMIN_PASSWORD: ${adminPassword ? "✓ Set" : "✗ Not set"}`);
+  console.log(`📋 RESET_ADMIN_PASSWORD: ${shouldResetAdminPassword ? "✓ Enabled" : "✗ Disabled"}`);
 
   if (adminUsername && adminPassword) {
     try {
@@ -1428,6 +1432,10 @@ export async function ensureStorageReady(): Promise<void> {
           role: "admin",
         });
         console.log(`✅ Initial admin account created successfully with ID: ${newUser.id}`);
+      } else if (shouldResetAdminPassword) {
+        console.log(`🔐 Resetting admin password from environment variables for "${adminUsername}"...`);
+        await storage.updateUserPassword(existingAdmin.id, adminPassword);
+        console.log(`✅ Admin password reset and account unlocked for "${adminUsername}"`);
       } else {
         console.log(`ℹ️  Admin account "${adminUsername}" already exists (ID: ${existingAdmin.id}), skipping initialization`);
       }

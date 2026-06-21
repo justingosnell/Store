@@ -330,6 +330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Session configuration
   const isProduction = process.env.NODE_ENV === 'production';
+  const sessionCookieName = process.env.SESSION_COOKIE_NAME || "connect.sid";
+  const sessionStoreName = isProduction && process.env.DATABASE_URL ? "PostgreSQL" : "Memory";
   
   let sessionStore: any;
   if (isProduction && process.env.DATABASE_URL) {
@@ -340,6 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sessionStore = new (PostgresStore(session))({
       pool: pool,
       tableName: 'session',
+      createTableIfMissing: true,
     });
     console.log("💾 Using PostgreSQL session store");
   } else {
@@ -352,6 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.use(
     session({
+      name: sessionCookieName,
       store: sessionStore,
       secret: process.env.SESSION_SECRET || "roadside-mapper-secret-key-change-in-production",
       resave: false,
@@ -365,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
   
-  console.log("🍪 Session config:", { secure: isProduction, store: isProduction ? 'PostgreSQL' : 'Memory', httpOnly: true, sameSite: 'lax' });
+  console.log("🍪 Session config:", { name: sessionCookieName, secure: isProduction, store: sessionStoreName, httpOnly: true, sameSite: 'lax' });
 
   // ============ Health Check Endpoint (for uptime monitoring) ============
   app.get("/health", (req: Request, res: Response) => {
@@ -455,6 +459,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ message: "Failed to logout" });
       }
+      res.clearCookie(sessionCookieName, {
+        path: "/",
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: "lax",
+      });
       res.json({ message: "Logout successful" });
     });
   });

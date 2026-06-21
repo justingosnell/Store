@@ -1,7 +1,7 @@
 export function getApiBaseUrl(): string {
   const viteApiUrl = import.meta.env.VITE_API_URL;
   if (viteApiUrl) {
-    return viteApiUrl;
+    return viteApiUrl.replace(/\/$/, "");
   }
   
   // Frontend and backend are on same domain (either localhost or Render)
@@ -11,8 +11,11 @@ export function getApiBaseUrl(): string {
 
 export function getApiUrl(endpoint: string): string {
   const baseUrl = getApiBaseUrl();
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
   if (baseUrl === '') {
-    return endpoint;
+    return normalizedEndpoint;
   }
-  return `${baseUrl}${endpoint}`;
+
+  return `${baseUrl}${normalizedEndpoint}`;
 }

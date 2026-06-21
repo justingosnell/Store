@@ -89,7 +89,7 @@ export function MediaLibrary({ open, onOpenChange, onSelect, mode = "select" }: 
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, alt, caption }: { id: string; alt: string; caption: string }) => {
-      const response = await fetch(`/api/media/${id}`, {
+      const response = await fetch(getApiUrl(`/api/media/${id}`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alt, caption }),
@@ -116,7 +116,7 @@ export function MediaLibrary({ open, onOpenChange, onSelect, mode = "select" }: 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/media/${id}`, {
+      const response = await fetch(getApiUrl(`/api/media/${id}`), {
         method: "DELETE",
         credentials: "include",
       });
