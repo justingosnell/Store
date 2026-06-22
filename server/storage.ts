@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Location, type InsertLocation, type Media, type InsertMedia, type Setting, type InsertSetting, type Category, type InsertCategory, type Product, type InsertProduct, users, locations, media, settings, categories, products } from "@shared/schema";
+import { type User, type InsertUser, type Location, type InsertLocation, type Media, type InsertMedia, type Setting, type InsertSetting, type Category, type InsertCategory, type Product, type InsertProduct, type AuditLog, type InsertAuditLog, users, locations, media, settings, categories, products, auditLogs } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -89,6 +89,9 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
+
+  // Audit log methods
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
 }
 
 export class MemStorage implements IStorage {
@@ -98,6 +101,7 @@ export class MemStorage implements IStorage {
   private settings: Map<string, Setting>;
   private categories: Map<string, Category>;
   private products: Map<string, Product>;
+  private auditLogs: Map<string, AuditLog>;
 
   constructor() {
     this.users = new Map();
@@ -106,6 +110,7 @@ export class MemStorage implements IStorage {
     this.settings = new Map();
     this.categories = new Map();
     this.products = new Map();
+    this.auditLogs = new Map();
     this.seedDefaultAdmin();
     this.seedDefaultCategories();
     this.seedMockLocations();
@@ -828,6 +833,23 @@ export class MemStorage implements IStorage {
   async deleteProduct(id: string): Promise<boolean> {
     return this.products.delete(id);
   }
+
+  async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
+    const id = randomUUID();
+    const auditLog: AuditLog = {
+      id,
+      actorUserId: insertLog.actorUserId ?? null,
+      actorUsername: insertLog.actorUsername ?? "",
+      action: insertLog.action,
+      resourceType: insertLog.resourceType,
+      resourceId: insertLog.resourceId,
+      summary: insertLog.summary,
+      metadata: insertLog.metadata ?? "{}",
+      createdAt: new Date().toISOString(),
+    };
+    this.auditLogs.set(id, auditLog);
+    return auditLog;
+  }
 }
 
 // Database Storage Implementation
@@ -1387,6 +1409,11 @@ export class DbStorage implements IStorage {
   async deleteProduct(id: string): Promise<boolean> {
     const result = await db.delete(products).where(eq(products.id, id)).returning();
     return result.length > 0;
+  }
+
+  async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
+    const result = await db.insert(auditLogs).values(insertLog).returning();
+    return result[0];
   }
 }
 

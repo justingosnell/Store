@@ -93,6 +93,20 @@ export async function runMigrations() {
     `;
 
     await client`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id text PRIMARY KEY,
+        actor_user_id text,
+        actor_username text DEFAULT '',
+        action text NOT NULL,
+        resource_type text NOT NULL,
+        resource_id text NOT NULL,
+        summary text NOT NULL,
+        metadata text DEFAULT '{}',
+        created_at text NOT NULL DEFAULT (CURRENT_TIMESTAMP)::text
+      )
+    `;
+
+    await client`
       CREATE TABLE IF NOT EXISTS categories (
         id text PRIMARY KEY,
         name text NOT NULL,
@@ -192,6 +206,16 @@ export async function runMigrations() {
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_password_change text NOT NULL DEFAULT (CURRENT_TIMESTAMP)::text",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password text NOT NULL DEFAULT 'false'",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at text NOT NULL DEFAULT (CURRENT_TIMESTAMP)::text",
+      ],
+      audit_logs: [
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS actor_user_id text",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS actor_username text DEFAULT ''",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS action text NOT NULL DEFAULT 'unknown'",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource_type text NOT NULL DEFAULT 'unknown'",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource_id text NOT NULL DEFAULT 'unknown'",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS summary text NOT NULL DEFAULT ''",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS metadata text DEFAULT '{}'",
+        "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS created_at text NOT NULL DEFAULT (CURRENT_TIMESTAMP)::text",
       ],
       locations: [
         "ALTER TABLE locations ADD COLUMN IF NOT EXISTS latitude double precision DEFAULT 0",

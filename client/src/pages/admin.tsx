@@ -103,6 +103,10 @@ function resolveMediaUrl(url: string) {
   return getApiUrl(url);
 }
 
+function valuesDiffer(previous: string | number | null | undefined, next: string | number | null | undefined) {
+  return String(previous ?? "") !== String(next ?? "");
+}
+
 function productToForm(product: Product): InsertProduct {
   return {
     title: product.title,
@@ -333,7 +337,7 @@ export default function Admin() {
   ] satisfies Array<{ id: AdminSection; label: string }>;
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (confirmations?: { confirmPriceChange?: boolean; confirmArchive?: boolean }) => {
       const url = editingProduct ? getApiUrl(`/api/products/${editingProduct.id}`) : getApiUrl("/api/products");
       const response = await fetch(url, {
         method: editingProduct ? "PUT" : "POST",
@@ -342,6 +346,7 @@ export default function Admin() {
         body: JSON.stringify({
           ...form,
           inventory: Number(form.inventory || 0),
+          ...confirmations,
         }),
       });
 
@@ -366,6 +371,7 @@ export default function Admin() {
     mutationFn: async (id: string) => {
       const response = await fetch(getApiUrl(`/api/products/${id}`), {
         method: "DELETE",
+        headers: { "X-Confirm-Action": "archive-product" },
         credentials: "include",
       });
       if (!response.ok) {
@@ -376,10 +382,10 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({ title: "Deleted", description: "Product removed from the store" });
+      toast({ title: "Archived", description: "Product was hidden from the active store and can be restored from Archived." });
     },
     onError: (error: Error) => {
-      toast({ title: "Could not delete product", description: error.message, variant: "destructive" });
+      toast({ title: "Could not archive product", description: error.message, variant: "destructive" });
     },
   });
 
@@ -456,7 +462,32 @@ export default function Admin() {
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    saveMutation.mutate();
+    const confirmPriceChange = Boolean(editingProduct && valuesDiffer(editingProduct.price, form.price));
+    const confirmArchive = Boolean(editingProduct && editingProduct.status !== "archived" && form.status === "archived");
+
+    if (confirmPriceChange) {
+      const confirmed = window.confirm(
+        `Changing this product price from ${money(editingProduct!.price)} to ${money(form.price)} can affect what shoppers see in the store. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
+    if (confirmArchive) {
+      const confirmed = window.confirm(
+        "Archiving this product will hide it from active selling views. It is a soft-delete and can be restored by changing the status later. Continue?"
+      );
+      if (!confirmed) return;
+    }
+
+    saveMutation.mutate({ confirmPriceChange, confirmArchive });
+  }
+
+  function handleArchiveProduct(product: Product) {
+    const confirmed = window.confirm(
+      `Archive "${product.title}"? This is a soft-delete: the product will be hidden from active selling views but kept in the database and audit history.`
+    );
+    if (!confirmed) return;
+    deleteMutation.mutate(product.id);
   }
 
   return (
@@ -671,7 +702,14 @@ export default function Admin() {
                                 <Button variant="ghost" size="sm" className="h-8 px-2 text-[#34363a]" onClick={() => openEditDialog(product)}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="h-8 px-2 text-[#ff5d75]" onClick={() => deleteMutation.mutate(product.id)}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2 text-[#ff5d75]"
+                                  onClick={() => handleArchiveProduct(product)}
+                                  disabled={product.status === "archived" || deleteMutation.isPending}
+                                  title={product.status === "archived" ? "Product is already archived" : "Archive product"}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>

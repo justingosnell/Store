@@ -15,6 +15,29 @@ export const users = pgTable("users", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const auditLogs = pgTable("audit_logs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  actorUserId: text("actor_user_id"),
+  actorUsername: text("actor_username").default(""),
+  action: text("action").notNull(),
+  resourceType: text("resource_type").notNull(),
+  resourceId: text("resource_id").notNull(),
+  summary: text("summary").notNull(),
+  metadata: text("metadata").default("{}"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type InsertAuditLog = {
+  actorUserId?: string;
+  actorUsername?: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  summary: string;
+  metadata?: string;
+};
+export type AuditLog = typeof auditLogs.$inferSelect;
+
 export const insertUserSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),

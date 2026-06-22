@@ -225,6 +225,34 @@ function mapSearchConsoleRow(row?: { clicks?: number; impressions?: number; ctr?
   };
 }
 
+function hasChanged(previous: string | number | null | undefined, next: string | number | null | undefined) {
+  return String(previous ?? "") !== String(next ?? "");
+}
+
+async function logAuditEvent(
+  req: Request,
+  action: string,
+  resourceType: string,
+  resourceId: string,
+  summary: string,
+  metadata: unknown = {}
+) {
+  try {
+    const actor = req.session.userId ? await storage.getUser(req.session.userId) : undefined;
+    await storage.createAuditLog({
+      actorUserId: req.session.userId,
+      actorUsername: actor?.username || "",
+      action,
+      resourceType,
+      resourceId,
+      summary,
+      metadata: JSON.stringify(metadata),
+    });
+  } catch (error) {
+    console.error("Audit log write failed:", error);
+  }
+}
+
 async function syncCloudinaryMediaToLibrary() {
   if (!isCloudinaryConfigured) return;
 
@@ -1439,6 +1467,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         handle: req.body.handle || slugify(req.body.title || ""),
       }) as InsertProduct;
       const product = await storage.createProduct(validatedData);
+      await logAuditEvent(req, "product.created", "product", product.id, `Created product "${product.title}"`, {
+        title: product.title,
+        price: product.price,
+        status: product.status,
+      });
       res.status(201).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1457,7 +1490,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertProductSchema.partial().parse(req.body);
+      const priceChanged = validatedData.price !== undefined && hasChanged(existing.price, validatedData.price);
+      const statusChanged = validatedData.status !== undefined && hasChanged(existing.status, validatedData.status);
+      const archiveRequested = validatedData.status === "archived" && existing.status !== "archived";
+
+      if (priceChanged && req.body.confirmPriceChange !== true) {
+        return res.status(409).json({
+          message: "Changing a product price requires confirmation.",
+          confirmationRequired: "price-change",
+        });
+      }
+
+      if (archiveRequested && req.body.confirmArchive !== true) {
+        return res.status(409).json({
+          message: "Archiving a product requires confirmation.",
+          confirmationRequired: "archive-product",
+        });
+      }
+
       const product = await storage.updateProduct(req.params.id, validatedData);
+      if (product) {
+        await logAuditEvent(req, "product.updated", "product", product.id, `Updated product "${product.title}"`, {
+          before: {
+            title: existing.title,
+            price: existing.price,
+            status: existing.status,
+          },
+          after: {
+            title: product.title,
+            price: product.price,
+            status: product.status,
+          },
+        });
+
+        if (priceChanged) {
+          await logAuditEvent(req, "product.price_changed", "product", product.id, `Changed price for "${product.title}" from ${existing.price} to ${product.price}`, {
+            previousPrice: existing.price,
+            newPrice: product.price,
+          });
+        }
+
+        if (statusChanged) {
+          await logAuditEvent(req, "product.status_changed", "product", product.id, `Changed status for "${product.title}" from ${existing.status} to ${product.status}`, {
+            previousStatus: existing.status,
+            newStatus: product.status,
+          });
+        }
+      }
       res.json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1470,14 +1549,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/products/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const success = await storage.deleteProduct(req.params.id);
-      if (!success) {
+      if (req.get("X-Confirm-Action") !== "archive-product") {
+        return res.status(409).json({
+          message: "Archiving a product requires confirmation.",
+          confirmationRequired: "archive-product",
+        });
+      }
+
+      const existing = await storage.getProduct(req.params.id);
+      if (!existing) {
         return res.status(404).json({ message: "Product not found" });
       }
-      res.json({ message: "Product deleted successfully" });
+
+      const product = await storage.updateProduct(req.params.id, { status: "archived" });
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      await logAuditEvent(req, "product.archived", "product", product.id, `Archived product "${product.title}"`, {
+        previousStatus: existing.status,
+        newStatus: product.status,
+        softDelete: true,
+      });
+
+      res.json({ message: "Product archived successfully", product });
     } catch (error) {
       console.error("Delete product error:", error);
-      res.status(500).json({ message: "Failed to delete product" });
+      res.status(500).json({ message: "Failed to archive product" });
     }
   });
 
