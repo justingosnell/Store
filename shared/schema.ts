@@ -232,6 +232,7 @@ export const products = pgTable("products", {
   imageUrl: text("image_url").default(""),
   ageRange: text("age_range").default(""),
   material: text("material").default(""),
+  variants: text("variants").default("{}"),
   tags: text("tags").default(""),
   sku: text("sku").default(""),
   featured: text("featured").notNull().default("false"),
@@ -254,6 +255,7 @@ export const insertProductSchema = z.object({
   imageUrl: z.string().default(""),
   ageRange: z.string().default(""),
   material: z.string().default(""),
+  variants: z.string().default("{}"),
   tags: z.string().default(""),
   sku: z.string().default(""),
   featured: z.string().default("false"),
@@ -274,6 +276,7 @@ export type InsertProduct = {
   imageUrl?: string;
   ageRange?: string;
   material?: string;
+  variants?: string;
   tags?: string;
   sku?: string;
   featured?: string;

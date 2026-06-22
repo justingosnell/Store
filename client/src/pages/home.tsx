@@ -114,6 +114,20 @@ function categoryEmoji(category: string) {
   return categories.find((item) => item.name === category)?.emoji ?? "🎀";
 }
 
+function parseProductVariants(value?: string | null) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return [
+      Array.isArray(parsed.size) && parsed.size.length ? `Sizes: ${parsed.size.slice(0, 3).join(", ")}` : "",
+      Array.isArray(parsed.color) && parsed.color.length ? `Colors: ${parsed.color.slice(0, 3).join(", ")}` : "",
+      Array.isArray(parsed.style) && parsed.style.length ? `Styles: ${parsed.style.slice(0, 2).join(", ")}` : "",
+    ].filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -547,6 +561,8 @@ export default function Home() {
 }
 
 function ProductCard({ product, onAdd }: { product: Product; onAdd: (product: Product) => void }) {
+  const variantDetails = parseProductVariants(product.variants);
+
   return (
     <div className="group relative overflow-hidden rounded-3xl border border-pink-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       {product.featured === "true" && (
@@ -582,7 +598,17 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (product: Pr
           </span>
         </div>
 
-        <p className="mb-3 line-clamp-2 text-xs text-gray-400">{product.description}</p>
+        <p className="mb-2 line-clamp-2 text-xs text-gray-400">{product.description}</p>
+
+        {variantDetails.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1">
+            {variantDetails.map((detail) => (
+              <span key={detail} className="rounded-full bg-pink-50 px-2 py-0.5 text-[11px] font-medium text-pink-600">
+                {detail}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-pink-600">{money(product.price)}</span>

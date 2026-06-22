@@ -85,6 +85,7 @@ const emptyForm: InsertProduct = {
   imageUrl: "",
   ageRange: "",
   material: "",
+  variants: "{}",
   tags: "",
   sku: "",
   featured: "false",
@@ -107,6 +108,75 @@ function valuesDiffer(previous: string | number | null | undefined, next: string
   return String(previous ?? "") !== String(next ?? "");
 }
 
+type ProductVariants = {
+  size: string[];
+  color: string[];
+  material: string[];
+  style: string[];
+};
+
+type ProductVariantDrafts = Record<keyof ProductVariants, string>;
+
+const emptyVariants: ProductVariants = {
+  size: [],
+  color: [],
+  material: [],
+  style: [],
+};
+
+const emptyVariantDrafts: ProductVariantDrafts = {
+  size: "",
+  color: "",
+  material: "",
+  style: "",
+};
+
+function parseProductVariants(value?: string | null): ProductVariants {
+  if (!value) return emptyVariants;
+  try {
+    const parsed = JSON.parse(value);
+    return {
+      size: Array.isArray(parsed.size) ? parsed.size.filter(Boolean) : [],
+      color: Array.isArray(parsed.color) ? parsed.color.filter(Boolean) : [],
+      material: Array.isArray(parsed.material) ? parsed.material.filter(Boolean) : [],
+      style: Array.isArray(parsed.style) ? parsed.style.filter(Boolean) : [],
+    };
+  } catch {
+    return emptyVariants;
+  }
+}
+
+function variantInputToList(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatVariantList(values: string[]) {
+  return values.join(", ");
+}
+
+function variantsToDrafts(variants: ProductVariants): ProductVariantDrafts {
+  return {
+    size: formatVariantList(variants.size),
+    color: formatVariantList(variants.color),
+    material: formatVariantList(variants.material),
+    style: formatVariantList(variants.style),
+  };
+}
+
+function getVariantSummary(product: Product | InsertProduct) {
+  const variants = parseProductVariants(product.variants);
+  const labels = [
+    variants.size.length ? `${variants.size.length} size${variants.size.length === 1 ? "" : "s"}` : "",
+    variants.color.length ? `${variants.color.length} color${variants.color.length === 1 ? "" : "s"}` : "",
+    variants.material.length ? `${variants.material.length} material${variants.material.length === 1 ? "" : "s"}` : "",
+    variants.style.length ? `${variants.style.length} style${variants.style.length === 1 ? "" : "s"}` : "",
+  ].filter(Boolean);
+  return labels.length ? labels.join(" / ") : "No variants";
+}
+
 function productToForm(product: Product): InsertProduct {
   return {
     title: product.title,
@@ -120,6 +190,7 @@ function productToForm(product: Product): InsertProduct {
     imageUrl: product.imageUrl,
     ageRange: product.ageRange,
     material: product.material,
+    variants: product.variants || "{}",
     tags: product.tags,
     sku: product.sku,
     featured: product.featured,
@@ -286,6 +357,7 @@ export default function Admin() {
   const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form, setForm] = useState<InsertProduct>(emptyForm);
+  const [variantDrafts, setVariantDrafts] = useState<ProductVariantDrafts>(emptyVariantDrafts);
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["products"],
@@ -423,12 +495,14 @@ export default function Admin() {
   function openCreateDialog() {
     setEditingProduct(null);
     setForm(emptyForm);
+    setVariantDrafts(emptyVariantDrafts);
     setDialogOpen(true);
   }
 
   function openEditDialog(product: Product) {
     setEditingProduct(product);
     setForm(productToForm(product));
+    setVariantDrafts(variantsToDrafts(parseProductVariants(product.variants)));
     setDialogOpen(true);
   }
 
@@ -436,10 +510,26 @@ export default function Admin() {
     setDialogOpen(false);
     setEditingProduct(null);
     setForm(emptyForm);
+    setVariantDrafts(emptyVariantDrafts);
   }
 
   function updateForm<K extends keyof InsertProduct>(key: K, value: InsertProduct[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateVariantOption(key: keyof ProductVariants, value: string) {
+    const nextDrafts = {
+      ...variantDrafts,
+      [key]: value,
+    };
+    setVariantDrafts(nextDrafts);
+    const next = {
+      size: variantInputToList(nextDrafts.size),
+      color: variantInputToList(nextDrafts.color),
+      material: variantInputToList(nextDrafts.material),
+      style: variantInputToList(nextDrafts.style),
+    };
+    updateForm("variants", JSON.stringify(next));
   }
 
   function handleProductImageSelect(media: Media) {
@@ -648,7 +738,7 @@ export default function Admin() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[980px] border-collapse text-left text-xs">
+                  <table className="w-full min-w-[1080px] border-collapse text-left text-xs">
                     <thead className="text-[11px] uppercase text-[#34363a]">
                       <tr className="border-b border-[#dfe3e6]">
                         <th className="w-20 border-r border-[#dfe3e6] px-8 py-5">
@@ -659,6 +749,7 @@ export default function Admin() {
                         <th className="border-r border-[#dfe3e6] px-6 py-5">Inventory</th>
                         <th className="border-r border-[#dfe3e6] px-6 py-5">SEO</th>
                         <th className="border-r border-[#dfe3e6] px-6 py-5">Category</th>
+                        <th className="border-r border-[#dfe3e6] px-6 py-5">Variants</th>
                         <th className="border-r border-[#dfe3e6] px-6 py-5">Price</th>
                         <th className="px-6 py-5 text-right">Actions</th>
                       </tr>
@@ -666,11 +757,11 @@ export default function Admin() {
                     <tbody className="text-[#686c71]">
                       {isLoading ? (
                         <tr>
-                          <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={8}>Loading products...</td>
+                          <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={9}>Loading products...</td>
                         </tr>
                       ) : filteredProducts.length === 0 ? (
                         <tr>
-                          <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={8}>No products found.</td>
+                          <td className="px-4 py-8 text-center text-[#6d7175]" colSpan={9}>No products found.</td>
                         </tr>
                       ) : (
                         filteredProducts.map((product) => (
@@ -696,6 +787,7 @@ export default function Admin() {
                               <SeoBadge score={getSeoScore(productToForm(product)).score} />
                             </td>
                             <td className="border-r border-[#e5e8ea] px-6 py-5">{product.category}</td>
+                            <td className="border-r border-[#e5e8ea] px-6 py-5 text-[#686c71]">{getVariantSummary(product)}</td>
                             <td className="border-r border-[#e5e8ea] px-6 py-5 text-[#34363a]">{money(product.price)}</td>
                             <td className="px-6 py-5">
                               <div className="flex justify-end gap-2">
@@ -801,6 +893,43 @@ export default function Admin() {
                 <Input value={form.material} onChange={(event) => updateForm("material", event.target.value)} placeholder="Organic cotton" />
               </Field>
             </div>
+            <section className="rounded-lg border border-[#dde0dc] bg-white p-4">
+              <div className="mb-4">
+                <h3 className="font-black text-[#34363a]">Variants</h3>
+                <p className="text-sm text-[#6d7175]">Add comma-separated options for clothing or configurable products.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Size options">
+                  <Input
+                    value={variantDrafts.size}
+                    onChange={(event) => updateVariantOption("size", event.target.value)}
+                    placeholder="Newborn, 0-3M, 3-6M"
+                  />
+                </Field>
+                <Field label="Color options">
+                  <Input
+                    value={variantDrafts.color}
+                    onChange={(event) => updateVariantOption("color", event.target.value)}
+                    placeholder="Ivory, Sage, Blush"
+                  />
+                </Field>
+                <Field label="Material options">
+                  <Input
+                    value={variantDrafts.material}
+                    onChange={(event) => updateVariantOption("material", event.target.value)}
+                    placeholder="Cotton, Bamboo, Fleece"
+                  />
+                </Field>
+                <Field label="Style options">
+                  <Input
+                    value={variantDrafts.style}
+                    onChange={(event) => updateVariantOption("style", event.target.value)}
+                    placeholder="Short sleeve, Long sleeve, Hooded"
+                  />
+                </Field>
+              </div>
+              <div className="mt-3 text-xs font-semibold text-[#6d7175]">{getVariantSummary(form)}</div>
+            </section>
             <section className="rounded-lg border border-[#dde0dc] bg-white p-4">
               <div className="mb-3">
                 <h3 className="font-black text-[#34363a]">Product description</h3>
