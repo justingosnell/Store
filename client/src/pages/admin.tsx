@@ -126,6 +126,31 @@ type SeoCheck = {
   status: "good" | "ok" | "bad";
 };
 
+type AdminOrder = {
+  id: string;
+  date: string;
+  customer: string;
+  email: string;
+  phone: string;
+  payment: string;
+  fulfillment: string;
+  total: string;
+  subtotal: string;
+  shipping: string;
+  tax: string;
+  shippingAddress: string;
+  billingAddress: string;
+  deliveryMethod: string;
+  trackingNumber?: string;
+  notes: string;
+  items: Array<{
+    name: string;
+    sku: string;
+    quantity: number;
+    price: string;
+  }>;
+};
+
 function getSeoTitle(form: InsertProduct) {
   return form.seoTitle?.trim() || form.title || "Product title";
 }
@@ -846,6 +871,8 @@ function AdminSectionPanel({
   productCount: number;
   onAddProduct: () => void;
 }) {
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+
   const titleMap: Record<AdminSection, string> = {
     home: "Home",
     orders: "Orders",
@@ -880,51 +907,251 @@ function AdminSectionPanel({
   }
 
   if (activeSection === "orders") {
-    const orders = [
-      { id: "#1007", date: "06/18/2026 10:08AM", customer: "Avery Johnson", payment: "Paid", fulfillment: "Unfulfilled", total: "$68.00" },
-      { id: "#1006", date: "06/17/2026 02:34PM", customer: "Maya Thompson", payment: "Authorized", fulfillment: "Partially Fulfilled", total: "$124.50" },
-      { id: "#1005", date: "06/16/2026 09:41AM", customer: "Elliot Brooks", payment: "Paid", fulfillment: "Fulfilled", total: "$42.00" },
-      { id: "#1004", date: "06/15/2026 04:20PM", customer: "Nora Williams", payment: "Paid", fulfillment: "Unfulfilled", total: "$89.99" },
+    const orders: AdminOrder[] = [
+      {
+        id: "#1007",
+        date: "06/18/2026 10:08AM",
+        customer: "Avery Johnson",
+        email: "avery.johnson@example.com",
+        phone: "(555) 014-1007",
+        payment: "Paid",
+        fulfillment: "Unfulfilled",
+        total: "$68.00",
+        subtotal: "$62.00",
+        shipping: "$0.00",
+        tax: "$6.00",
+        shippingAddress: "214 Magnolia Lane, Austin, TX 78704",
+        billingAddress: "214 Magnolia Lane, Austin, TX 78704",
+        deliveryMethod: "Standard shipping",
+        notes: "Gift wrap requested. Include the handwritten note from checkout.",
+        items: [
+          { name: "Little Arrival Gift Box", sku: "GIFT-LITTLE-ARRIVAL", quantity: 1, price: "$68.00" },
+        ],
+      },
+      {
+        id: "#1006",
+        date: "06/17/2026 02:34PM",
+        customer: "Maya Thompson",
+        email: "maya.thompson@example.com",
+        phone: "(555) 014-1006",
+        payment: "Authorized",
+        fulfillment: "Partially Fulfilled",
+        total: "$124.50",
+        subtotal: "$116.00",
+        shipping: "$0.00",
+        tax: "$8.50",
+        shippingAddress: "88 Willow Street, Portland, OR 97205",
+        billingAddress: "88 Willow Street, Portland, OR 97205",
+        deliveryMethod: "Standard shipping",
+        trackingNumber: "TT94001006",
+        notes: "One item is packed. Waiting on restock for the blanket.",
+        items: [
+          { name: "Organic Cotton Swaddle", sku: "SWD-COTTON-SAGE", quantity: 2, price: "$32.00" },
+          { name: "Keepsake Rattle", sku: "TOY-RATTLE-WOOD", quantity: 1, price: "$28.00" },
+          { name: "Soft Knit Blanket", sku: "BLK-KNIT-CREAM", quantity: 1, price: "$32.00" },
+        ],
+      },
+      {
+        id: "#1005",
+        date: "06/16/2026 09:41AM",
+        customer: "Elliot Brooks",
+        email: "elliot.brooks@example.com",
+        phone: "(555) 014-1005",
+        payment: "Paid",
+        fulfillment: "Fulfilled",
+        total: "$42.00",
+        subtotal: "$38.00",
+        shipping: "$0.00",
+        tax: "$4.00",
+        shippingAddress: "502 Cedar Court, Denver, CO 80203",
+        billingAddress: "502 Cedar Court, Denver, CO 80203",
+        deliveryMethod: "Standard shipping",
+        trackingNumber: "TT94001005",
+        notes: "Delivered to front desk.",
+        items: [
+          { name: "Keepsake Rattle", sku: "TOY-RATTLE-WOOD", quantity: 1, price: "$28.00" },
+          { name: "Milestone Card Set", sku: "CARD-MILESTONE", quantity: 1, price: "$14.00" },
+        ],
+      },
+      {
+        id: "#1004",
+        date: "06/15/2026 04:20PM",
+        customer: "Nora Williams",
+        email: "nora.williams@example.com",
+        phone: "(555) 014-1004",
+        payment: "Paid",
+        fulfillment: "Unfulfilled",
+        total: "$89.99",
+        subtotal: "$82.99",
+        shipping: "$0.00",
+        tax: "$7.00",
+        shippingAddress: "19 Rose Avenue, Charlotte, NC 28202",
+        billingAddress: "19 Rose Avenue, Charlotte, NC 28202",
+        deliveryMethod: "Standard shipping",
+        notes: "Customer asked for neutral packaging.",
+        items: [
+          { name: "Little Arrival Gift Box", sku: "GIFT-LITTLE-ARRIVAL", quantity: 1, price: "$68.00" },
+          { name: "Milestone Card Set", sku: "CARD-MILESTONE", quantity: 1, price: "$21.99" },
+        ],
+      },
     ];
 
     return (
-      <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-[#dfe3e6] p-4">
-          <h3 className="font-black text-[#34363a]">Recent orders</h3>
-          <Button variant="ghost" size="sm" className="gap-2 text-xs text-[#65696d]">
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-xs">
-            <thead className="text-[11px] uppercase text-[#34363a]">
-              <tr className="border-b border-[#dfe3e6]">
-                <th className="px-6 py-5">Order</th>
-                <th className="px-6 py-5">Date</th>
-                <th className="px-6 py-5">Customer</th>
-                <th className="px-6 py-5">Payment Status</th>
-                <th className="px-6 py-5">Fulfillment Status</th>
-                <th className="px-6 py-5">Total</th>
-              </tr>
-            </thead>
-            <tbody className="text-[#686c71]">
-              {orders.map((order) => (
-                <tr key={order.id} className="border-b border-[#e5e8ea] last:border-b-0">
-                  <td className="px-6 py-5 font-semibold text-[#008060]">{order.id}</td>
-                  <td className="px-6 py-5">{order.date}</td>
-                  <td className="px-6 py-5">{order.customer}</td>
-                  <td className={`px-6 py-5 ${order.payment === "Paid" ? "text-[#008060]" : "text-[#b95000]"}`}>{order.payment}</td>
-                  <td className={`px-6 py-5 ${order.fulfillment === "Fulfilled" ? "text-[#008060]" : order.fulfillment === "Partially Fulfilled" ? "text-[#b42318]" : "text-[#b95000]"}`}>
-                    {order.fulfillment}
-                  </td>
-                  <td className="px-6 py-5 text-[#34363a]">{order.total}</td>
+      <>
+        <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#dfe3e6] p-4">
+            <h3 className="font-black text-[#34363a]">Recent orders</h3>
+            <Button variant="ghost" size="sm" className="gap-2 text-xs text-[#65696d]">
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left text-xs">
+              <thead className="text-[11px] uppercase text-[#34363a]">
+                <tr className="border-b border-[#dfe3e6]">
+                  <th className="px-6 py-5">Order</th>
+                  <th className="px-6 py-5">Date</th>
+                  <th className="px-6 py-5">Customer</th>
+                  <th className="px-6 py-5">Payment Status</th>
+                  <th className="px-6 py-5">Fulfillment Status</th>
+                  <th className="px-6 py-5">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody className="text-[#686c71]">
+                {orders.map((order) => (
+                  <tr key={order.id} className="border-b border-[#e5e8ea] last:border-b-0">
+                    <td className="px-6 py-5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrder(order)}
+                        className="font-semibold text-[#008060] underline-offset-4 transition hover:text-[#006e52] hover:underline focus:outline-none focus:ring-2 focus:ring-[#008060] focus:ring-offset-2"
+                      >
+                        {order.id}
+                      </button>
+                    </td>
+                    <td className="px-6 py-5">{order.date}</td>
+                    <td className="px-6 py-5">{order.customer}</td>
+                    <td className={`px-6 py-5 ${order.payment === "Paid" ? "text-[#008060]" : "text-[#b95000]"}`}>{order.payment}</td>
+                    <td className={`px-6 py-5 ${order.fulfillment === "Fulfilled" ? "text-[#008060]" : order.fulfillment === "Partially Fulfilled" ? "text-[#b42318]" : "text-[#b95000]"}`}>
+                      {order.fulfillment}
+                    </td>
+                    <td className="px-6 py-5 text-[#34363a]">{order.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <Dialog open={Boolean(selectedOrder)} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+          <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+            {selectedOrder && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Order {selectedOrder.id}</DialogTitle>
+                  <p className="text-sm text-[#686c71]">
+                    Placed {selectedOrder.date} by {selectedOrder.customer}
+                  </p>
+                </DialogHeader>
+
+                <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+                  <div className="space-y-4">
+                    <div className="rounded-lg border border-[#dfe3e6]">
+                      <div className="border-b border-[#dfe3e6] px-4 py-3">
+                        <h4 className="font-black text-[#34363a]">Items</h4>
+                      </div>
+                      <div className="divide-y divide-[#e5e8ea]">
+                        {selectedOrder.items.map((item) => (
+                          <div key={item.sku} className="grid grid-cols-[1fr_auto] gap-4 px-4 py-4 text-sm">
+                            <div>
+                              <div className="font-semibold text-[#34363a]">{item.name}</div>
+                              <div className="mt-1 text-xs text-[#686c71]">SKU {item.sku}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold text-[#34363a]">{item.price}</div>
+                              <div className="mt-1 text-xs text-[#686c71]">Qty {item.quantity}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#dfe3e6] p-4">
+                      <h4 className="font-black text-[#34363a]">Timeline</h4>
+                      <div className="mt-4 space-y-3 text-sm text-[#686c71]">
+                        <div className="flex gap-3">
+                          <span className="mt-1 h-2 w-2 rounded-full bg-[#008060]" />
+                          <div>
+                            <div className="font-semibold text-[#34363a]">Order placed</div>
+                            <div>{selectedOrder.date}</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="mt-1 h-2 w-2 rounded-full bg-[#b95000]" />
+                          <div>
+                            <div className="font-semibold text-[#34363a]">{selectedOrder.fulfillment}</div>
+                            <div>{selectedOrder.trackingNumber ? `Tracking ${selectedOrder.trackingNumber}` : "No tracking number yet"}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#dfe3e6] p-4">
+                      <h4 className="font-black text-[#34363a]">Notes</h4>
+                      <p className="mt-2 text-sm leading-6 text-[#686c71]">{selectedOrder.notes}</p>
+                    </div>
+                  </div>
+
+                  <aside className="space-y-4">
+                    <div className="rounded-lg border border-[#dfe3e6] p-4">
+                      <h4 className="font-black text-[#34363a]">Summary</h4>
+                      <div className="mt-4 space-y-3 text-sm">
+                        <div className="flex justify-between gap-4 text-[#686c71]"><span>Subtotal</span><span>{selectedOrder.subtotal}</span></div>
+                        <div className="flex justify-between gap-4 text-[#686c71]"><span>Shipping</span><span>{selectedOrder.shipping}</span></div>
+                        <div className="flex justify-between gap-4 text-[#686c71]"><span>Tax</span><span>{selectedOrder.tax}</span></div>
+                        <div className="flex justify-between gap-4 border-t border-[#dfe3e6] pt-3 font-black text-[#34363a]"><span>Total</span><span>{selectedOrder.total}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#dfe3e6] p-4">
+                      <h4 className="font-black text-[#34363a]">Customer</h4>
+                      <div className="mt-3 space-y-1 text-sm text-[#686c71]">
+                        <div className="font-semibold text-[#34363a]">{selectedOrder.customer}</div>
+                        <div>{selectedOrder.email}</div>
+                        <div>{selectedOrder.phone}</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#dfe3e6] p-4">
+                      <h4 className="font-black text-[#34363a]">Payment</h4>
+                      <p className={`mt-2 text-sm font-semibold ${selectedOrder.payment === "Paid" ? "text-[#008060]" : "text-[#b95000]"}`}>{selectedOrder.payment}</p>
+                    </div>
+
+                    <div className="rounded-lg border border-[#dfe3e6] p-4">
+                      <h4 className="font-black text-[#34363a]">Shipping</h4>
+                      <div className="mt-3 space-y-3 text-sm text-[#686c71]">
+                        <div>
+                          <div className="font-semibold text-[#34363a]">Method</div>
+                          <div>{selectedOrder.deliveryMethod}</div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[#34363a]">Ship to</div>
+                          <div>{selectedOrder.shippingAddress}</div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[#34363a]">Bill to</div>
+                          <div>{selectedOrder.billingAddress}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
