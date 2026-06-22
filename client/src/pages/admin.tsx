@@ -98,6 +98,11 @@ function money(value: string | number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(numeric);
 }
 
+function resolveMediaUrl(url: string) {
+  if (!url || /^https?:\/\//i.test(url) || url.startsWith("data:")) return url;
+  return getApiUrl(url);
+}
+
 function productToForm(product: Product): InsertProduct {
   return {
     title: product.title,
@@ -397,9 +402,9 @@ export default function Admin() {
       return response.json() as Promise<Media>;
     },
     onSuccess: (media) => {
-      updateForm("imageUrl", media.url);
+      updateForm("imageUrl", resolveMediaUrl(media.url));
       queryClient.invalidateQueries({ queryKey: ["media"] });
-      toast({ title: "Image uploaded", description: "The Cloudinary URL was applied to this product." });
+      toast({ title: "Image uploaded", description: "The image was applied to this product." });
       if (productImageInputRef.current) {
         productImageInputRef.current.value = "";
       }
@@ -432,7 +437,7 @@ export default function Admin() {
   }
 
   function handleProductImageSelect(media: Media) {
-    updateForm("imageUrl", media.url);
+    updateForm("imageUrl", resolveMediaUrl(media.url));
     setMediaLibraryOpen(false);
   }
 

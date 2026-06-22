@@ -277,9 +277,22 @@ async function uploadFileToConfiguredStorage(file: Express.Multer.File): Promise
     };
   }
 
-  throw new Error(
-    "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to upload product images."
-  );
+  console.warn("⚠️ Cloudinary is not configured. Storing uploaded image in the database.");
+  const data = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+
+  return {
+    filename: `${fileHash}-${safeFileName}`,
+    originalName: file.originalname,
+    url: "",
+    mimeType: file.mimetype,
+    size: String(file.size),
+    width: "",
+    height: "",
+    alt: "",
+    caption: "",
+    data,
+    storagePath: `database:${fileHash}`,
+  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -915,10 +928,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Image not found" });
       }
 
-      if (mediaItem.url) {
-        return res.redirect(mediaItem.url);
-      }
-
       if (mediaItem.data?.startsWith("data:")) {
         const parts = mediaItem.data.split(";base64,");
         if (parts.length === 2) {
@@ -929,6 +938,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.send(Buffer.from(base64Data, "base64"));
           return;
         }
+      }
+
+      if (mediaItem.url) {
+        return res.redirect(mediaItem.url);
       }
 
       res.status(404).json({ message: "Image not found" });
@@ -969,9 +982,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...mediaData,
         uploadedBy: req.session.userId,
       });
+      const responseMedia = mediaItem.url
+        ? mediaItem
+        : await storage.updateMedia(mediaItem.id, { url: `/api/image/${mediaItem.id}` }) || mediaItem;
 
-      console.log("✅ Media record created:", mediaItem.id);
-      res.status(201).json(mediaItem);
+      console.log("✅ Media record created:", responseMedia.id);
+      res.status(201).json(responseMedia);
     } catch (error) {
       console.error("❌ Upload error:", {
         error,
@@ -1053,15 +1069,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...mediaData,
           uploadedBy: req.session.userId,
         });
+        const responseMedia = mediaItem.url
+          ? mediaItem
+          : await storage.updateMedia(mediaItem.id, { url: `/api/image/${mediaItem.id}` }) || mediaItem;
 
-        console.log("✅ Media record created:", { id: mediaItem.id, url: mediaItem.url });
+        console.log("✅ Media record created:", { id: responseMedia.id, url: responseMedia.url });
 
         res.json({ 
-          url: mediaItem.url,
-          filename: mediaItem.filename,
-          originalName: mediaItem.originalName,
-          size: mediaItem.size,
-          id: mediaItem.id,
+          url: responseMedia.url,
+          filename: responseMedia.filename,
+          originalName: responseMedia.originalName,
+          size: responseMedia.size,
+          id: responseMedia.id,
         });
       } catch (dbError) {
         console.error("❌ Failed to create media record:", {
