@@ -290,9 +290,9 @@ export default function Home() {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/70 to-white/85" />
-        <div className="absolute right-[-60px] top-[-80px] h-[420px] w-[420px] rounded-full bg-pink-300/20 blur-[80px]" />
-        <div className="absolute bottom-[-60px] left-[-60px] h-[360px] w-[360px] rounded-full bg-purple-300/20 blur-[80px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/45 via-white/30 to-white/55" />
+        <div className="absolute right-[-60px] top-[-80px] h-[420px] w-[420px] rounded-full bg-pink-300/10 blur-[80px]" />
+        <div className="absolute bottom-[-60px] left-[-60px] h-[360px] w-[360px] rounded-full bg-purple-300/10 blur-[80px]" />
 
         {floatingItems.map((item) => (
           <div
@@ -311,14 +311,26 @@ export default function Home() {
             <Sparkles className="h-4 w-4 animate-spin-slow" style={{ animationDirection: "reverse", animationDuration: "4s" }} />
           </div>
 
-          <h1 className="animate-pop-in mb-6 text-5xl font-bold leading-tight text-gray-800 md:text-7xl" style={{ animationDelay: "0.1s" }}>
+          <h1
+            className="animate-pop-in mb-6 text-5xl font-bold leading-tight text-gray-950 md:text-7xl"
+            style={{
+              animationDelay: "0.1s",
+              textShadow: "0 2px 18px rgba(255,255,255,0.95), 0 1px 3px rgba(255,255,255,0.9)",
+            }}
+          >
             Everything Baby,{" "}
-            <span className="bg-gradient-to-r from-pink-500 via-rose-400 to-purple-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-pink-700 via-rose-600 to-purple-700 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(255,255,255,0.95)]">
               Made with Love
             </span>
           </h1>
 
-          <p className="animate-pop-in mx-auto mb-8 max-w-2xl text-xl leading-relaxed text-gray-600" style={{ animationDelay: "0.2s" }}>
+          <p
+            className="animate-pop-in mx-auto mb-8 max-w-2xl text-xl font-medium leading-relaxed text-gray-900"
+            style={{
+              animationDelay: "0.2s",
+              textShadow: "0 1px 12px rgba(255,255,255,0.9)",
+            }}
+          >
             Discover our carefully curated collection of storybooks, toys, burp cloths, and more, all chosen with your baby's joy and safety in mind.
           </p>
 
