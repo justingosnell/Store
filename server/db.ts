@@ -28,19 +28,18 @@ export async function initializeDatabase() {
     // 4. Copy the connection string
     // 5. Add ?sslmode=require at the end
     
-    // Remove ?sslmode=require from URL if present, as we handle SSL via options
-    const cleanUrl = databaseUrl.replace('?sslmode=require', '');
-    
+    const requiresSsl =
+      process.env.NODE_ENV === "production" ||
+      /[?&]sslmode=require(?:&|$)/i.test(databaseUrl);
+
     const options: any = {
-      ssl: process.env.NODE_ENV === 'production' ? {
-        rejectUnauthorized: false,
-      } : false,
+      ssl: requiresSsl ? "require" : false,
       // Timeout settings for better reliability
       idle_timeout: 20,
       max_lifetime: 60 * 15,
     };
     
-    client = postgres(cleanUrl, options);
+    client = postgres(databaseUrl, options);
     
     _db = drizzle(client, { schema });
     console.log("✅ Database initialized");
@@ -103,6 +102,13 @@ export async function runMigrations() {
         summary text NOT NULL,
         metadata text DEFAULT '{}',
         created_at text NOT NULL DEFAULT (CURRENT_TIMESTAMP)::text
+      )
+    `;
+    await client`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key text PRIMARY KEY,
+        count double precision NOT NULL DEFAULT 0,
+        reset_at double precision NOT NULL
       )
     `;
 
@@ -184,6 +190,7 @@ export async function runMigrations() {
         inventory double precision DEFAULT 0,
         status text NOT NULL DEFAULT 'active',
         image_url text DEFAULT '',
+        image_urls text DEFAULT '[]',
         age_range text DEFAULT '',
         material text DEFAULT '',
         variants text DEFAULT '{}',
@@ -259,6 +266,7 @@ export async function runMigrations() {
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS inventory double precision DEFAULT 0",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url text DEFAULT ''",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_urls text DEFAULT '[]'",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS age_range text DEFAULT ''",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS material text DEFAULT ''",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS variants text DEFAULT '{}'",

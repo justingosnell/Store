@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
-  BadgePercent,
   Bell,
   Boxes,
   CheckCircle2,
@@ -15,7 +14,6 @@ import {
   Download,
   Home,
   Image,
-  Megaphone,
   PackagePlus,
   Pencil,
   Search,
@@ -28,8 +26,17 @@ import {
   Upload,
   UserCircle,
   Users,
+  LogOut,
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -43,7 +50,7 @@ import { getApiUrl } from "@/lib/api";
 import { MediaLibraryPanel } from "@/components/MediaLibraryPanel";
 import type { InsertProduct, Media, Product } from "@shared/schema";
 
-type AdminSection = "home" | "orders" | "products" | "customers" | "analytics" | "marketing" | "discounts";
+type AdminSection = "home" | "orders" | "products" | "customers" | "analytics" | "gallery" | "meta" | "performance";
 
 type GoogleSearchConsoleStatus = {
   configured: boolean;
@@ -83,6 +90,7 @@ const emptyForm: InsertProduct = {
   inventory: 0,
   status: "active",
   imageUrl: "",
+  imageUrls: "[]",
   ageRange: "",
   material: "",
   variants: "{}",
@@ -102,6 +110,22 @@ function money(value: string | number) {
 function resolveMediaUrl(url: string) {
   if (!url || /^https?:\/\//i.test(url) || url.startsWith("data:")) return url;
   return getApiUrl(url);
+}
+
+function parseProductImageUrls(value?: string | null): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((url): url is string => typeof url === "string" && Boolean(url.trim()))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function getProductImages(product: Pick<InsertProduct, "imageUrl" | "imageUrls">): string[] {
+  return Array.from(new Set([product.imageUrl || "", ...parseProductImageUrls(product.imageUrls)].filter(Boolean)));
 }
 
 function valuesDiffer(previous: string | number | null | undefined, next: string | number | null | undefined) {
@@ -188,6 +212,7 @@ function productToForm(product: Product): InsertProduct {
     inventory: product.inventory,
     status: product.status as "active" | "draft" | "archived",
     imageUrl: product.imageUrl,
+    imageUrls: product.imageUrls || "[]",
     ageRange: product.ageRange,
     material: product.material,
     variants: product.variants || "{}",
@@ -230,6 +255,95 @@ type AdminOrder = {
     price: string;
   }>;
 };
+
+const initialAdminOrders: AdminOrder[] = [
+  {
+    id: "#1007",
+    date: "06/18/2026 10:08AM",
+    customer: "Avery Johnson",
+    email: "avery.johnson@example.com",
+    phone: "(555) 014-1007",
+    payment: "Paid",
+    fulfillment: "Unfulfilled",
+    total: "$68.00",
+    subtotal: "$62.00",
+    shipping: "$0.00",
+    tax: "$6.00",
+    shippingAddress: "214 Magnolia Lane, Austin, TX 78704",
+    billingAddress: "214 Magnolia Lane, Austin, TX 78704",
+    deliveryMethod: "Standard shipping",
+    notes: "Gift wrap requested. Include the handwritten note from checkout.",
+    items: [
+      { name: "Little Arrival Gift Box", sku: "GIFT-LITTLE-ARRIVAL", quantity: 1, price: "$68.00" },
+    ],
+  },
+  {
+    id: "#1006",
+    date: "06/17/2026 02:34PM",
+    customer: "Maya Thompson",
+    email: "maya.thompson@example.com",
+    phone: "(555) 014-1006",
+    payment: "Authorized",
+    fulfillment: "Partially Fulfilled",
+    total: "$124.50",
+    subtotal: "$116.00",
+    shipping: "$0.00",
+    tax: "$8.50",
+    shippingAddress: "88 Willow Street, Portland, OR 97205",
+    billingAddress: "88 Willow Street, Portland, OR 97205",
+    deliveryMethod: "Standard shipping",
+    trackingNumber: "TT94001006",
+    notes: "One item is packed. Waiting on restock for the blanket.",
+    items: [
+      { name: "Organic Cotton Swaddle", sku: "SWD-COTTON-SAGE", quantity: 2, price: "$32.00" },
+      { name: "Keepsake Rattle", sku: "TOY-RATTLE-WOOD", quantity: 1, price: "$28.00" },
+      { name: "Soft Knit Blanket", sku: "BLK-KNIT-CREAM", quantity: 1, price: "$32.00" },
+    ],
+  },
+  {
+    id: "#1005",
+    date: "06/16/2026 09:41AM",
+    customer: "Elliot Brooks",
+    email: "elliot.brooks@example.com",
+    phone: "(555) 014-1005",
+    payment: "Paid",
+    fulfillment: "Fulfilled",
+    total: "$42.00",
+    subtotal: "$38.00",
+    shipping: "$0.00",
+    tax: "$4.00",
+    shippingAddress: "502 Cedar Court, Denver, CO 80203",
+    billingAddress: "502 Cedar Court, Denver, CO 80203",
+    deliveryMethod: "Standard shipping",
+    trackingNumber: "TT94001005",
+    notes: "Delivered to front desk.",
+    items: [
+      { name: "Keepsake Rattle", sku: "TOY-RATTLE-WOOD", quantity: 1, price: "$28.00" },
+      { name: "Milestone Card Set", sku: "CARD-MILESTONE", quantity: 1, price: "$14.00" },
+    ],
+  },
+  {
+    id: "#1004",
+    date: "06/15/2026 04:20PM",
+    customer: "Nora Williams",
+    email: "nora.williams@example.com",
+    phone: "(555) 014-1004",
+    payment: "Paid",
+    fulfillment: "Unfulfilled",
+    total: "$89.99",
+    subtotal: "$82.99",
+    shipping: "$0.00",
+    tax: "$7.00",
+    shippingAddress: "19 Rose Avenue, Charlotte, NC 28202",
+    billingAddress: "19 Rose Avenue, Charlotte, NC 28202",
+    deliveryMethod: "Standard shipping",
+    notes: "Customer asked for neutral packaging.",
+    items: [
+      { name: "Little Arrival Gift Box", sku: "GIFT-LITTLE-ARRIVAL", quantity: 1, price: "$68.00" },
+      { name: "Milestone Card Set", sku: "CARD-MILESTONE", quantity: 1, price: "$21.99" },
+    ],
+  },
+];
 
 function getSeoTitle(form: InsertProduct) {
   return form.seoTitle?.trim() || form.title || "Product title";
@@ -347,6 +461,7 @@ function getSeoScore(form: InsertProduct): { checks: SeoCheck[]; score: number; 
 
 export default function Admin() {
   const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const productImageInputRef = useRef<HTMLInputElement>(null);
@@ -395,18 +510,10 @@ export default function Admin() {
     { id: "products", label: "Products", icon: Boxes },
     { id: "customers", label: "Customers", icon: Users },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "marketing", label: "Marketing", icon: Megaphone },
-    { id: "discounts", label: "Discounts", icon: BadgePercent },
+    { id: "performance", label: "Performance", icon: BarChart3 },
+    { id: "gallery", label: "Gallery", icon: Image },
+    { id: "meta", label: "Meta", icon: SearchCheck },
   ] satisfies Array<{ id: AdminSection; label: string; icon: typeof Home }>;
-
-  const sectionTabs = [
-    { id: "products", label: "All Products" },
-    { id: "orders", label: "Open" },
-    { id: "analytics", label: "Low Stock" },
-    { id: "marketing", label: "Featured" },
-    { id: "discounts", label: "SEO Ready" },
-    { id: "customers", label: "Customers" },
-  ] satisfies Array<{ id: AdminSection; label: string }>;
 
   const saveMutation = useMutation({
     mutationFn: async (confirmations?: { confirmPriceChange?: boolean; confirmArchive?: boolean }) => {
@@ -479,13 +586,8 @@ export default function Admin() {
 
       return response.json() as Promise<Media>;
     },
-    onSuccess: (media) => {
-      updateForm("imageUrl", resolveMediaUrl(media.url));
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] });
-      toast({ title: "Image uploaded", description: "The image was applied to this product." });
-      if (productImageInputRef.current) {
-        productImageInputRef.current.value = "";
-      }
     },
     onError: (error: Error) => {
       toast({ title: "Image upload failed", description: error.message, variant: "destructive" });
@@ -517,6 +619,36 @@ export default function Admin() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function addProductImages(urls: string[]) {
+    setForm((current) => {
+      const nextImages = Array.from(new Set([...getProductImages(current), ...urls.filter(Boolean)]));
+      return {
+        ...current,
+        imageUrl: current.imageUrl || nextImages[0] || "",
+        imageUrls: JSON.stringify(nextImages),
+      };
+    });
+  }
+
+  function setPrimaryProductImage(url: string) {
+    setForm((current) => ({
+      ...current,
+      imageUrl: url,
+      imageUrls: JSON.stringify(Array.from(new Set([url, ...getProductImages(current)]))),
+    }));
+  }
+
+  function removeProductImage(url: string) {
+    setForm((current) => {
+      const remaining = getProductImages(current).filter((imageUrl) => imageUrl !== url);
+      return {
+        ...current,
+        imageUrl: current.imageUrl === url ? remaining[0] || "" : current.imageUrl,
+        imageUrls: JSON.stringify(remaining),
+      };
+    });
+  }
+
   function updateVariantOption(key: keyof ProductVariants, value: string) {
     const nextDrafts = {
       ...variantDrafts,
@@ -533,21 +665,29 @@ export default function Admin() {
   }
 
   function handleProductImageSelect(media: Media) {
-    updateForm("imageUrl", resolveMediaUrl(media.url));
+    addProductImages([resolveMediaUrl(media.url)]);
     setMediaLibraryOpen(false);
   }
 
-  function handleProductImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function handleProductImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Invalid file", description: "Please upload an image file.", variant: "destructive" });
-      event.target.value = "";
-      return;
+    const validFiles = files.filter((file) => file.type.startsWith("image/"));
+    if (validFiles.length !== files.length) {
+      toast({ title: "Some files were skipped", description: "Only image files can be uploaded.", variant: "destructive" });
     }
 
-    productImageUploadMutation.mutate(file);
+    try {
+      const uploaded = await Promise.all(validFiles.map((file) => productImageUploadMutation.mutateAsync(file)));
+      addProductImages(uploaded.map((media) => resolveMediaUrl(media.url)));
+      toast({
+        title: "Images uploaded",
+        description: `${uploaded.length} product image${uploaded.length === 1 ? "" : "s"} added.`,
+      });
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function handleSubmit(event: React.FormEvent) {
@@ -580,23 +720,30 @@ export default function Admin() {
     deleteMutation.mutate(product.id);
   }
 
+  async function handleLogout() {
+    const confirmed = window.confirm("Log out of the Tiny Treasures admin panel?");
+    if (!confirmed) return;
+    await logout();
+  }
+
   return (
-    <div className="min-h-screen bg-[#f3f5f7] p-3 text-[#2f3135] sm:p-5">
+    <div className="min-h-screen bg-[#f3f5f7] p-2 text-[#2f3135] sm:p-5">
       <header className="mb-5 rounded-lg border border-[#d5dadd] bg-white shadow-sm">
-        <div className="flex min-h-[76px] items-center justify-between gap-3 px-5">
+        <div className="flex min-h-[76px] items-center justify-between gap-3 px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-4">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#008060] text-white">
               <Store className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-black text-black">Tiny Treasures Admin Panel</h1>
+              <h1 className="truncate text-base font-black text-black sm:text-xl">Tiny Treasures Admin Panel</h1>
               <p className="text-xs text-[#8b8e92]">Signed in as {user?.username}</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2 text-[#7d8185]">
+          <div className="flex shrink-0 items-center gap-3 text-[#7d8185]">
             <Link href="/">
-              <Button variant="ghost" size="icon" className="h-9 w-9" title="Storefront">
-                <Store className="h-4 w-4" />
+              <Button variant="outline" className="hidden sm:flex items-center gap-2 border-[#bfc5c8] text-[#2f3135] hover:bg-slate-50 hover:text-black">
+                <Store className="h-4 w-4 text-[#008060]" />
+                View Storefront
               </Button>
             </Link>
             <Button
@@ -612,16 +759,37 @@ export default function Admin() {
                 </span>
               )}
             </Button>
-            <Button variant="ghost" size="icon" className="h-10 w-10 overflow-hidden rounded-full border border-[#d5dadd] bg-white" onClick={logout} title="Logout">
-              <UserCircle className="h-7 w-7 text-[#123a5a]" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10 overflow-hidden rounded-full border border-[#d5dadd] bg-white hover:bg-slate-50" title="Admin User Menu">
+                  <UserCircle className="h-7 w-7 text-[#123a5a]" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Logged in as {user?.username}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled>
+                  <UserCircle className="h-4 w-4 mr-2 text-[#123a5a]" />
+                  My Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/")} className="cursor-pointer">
+                  <Store className="h-4 w-4 mr-2 text-[#008060]" />
+                  View Storefront
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-[#d72c0d] focus:text-[#d72c0d] focus:bg-[#fdecea] cursor-pointer">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[264px_minmax(0,1fr)]">
-        <aside className="rounded-lg bg-[#123a5a] p-6 shadow-sm lg:min-h-[calc(100vh-136px)]">
-          <nav className="grid gap-3">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[264px_minmax(0,1fr)]">
+        <aside className="rounded-lg bg-[#123a5a] p-2 shadow-sm sm:p-3 lg:min-h-[calc(100vh-136px)] lg:p-6">
+          <nav className="flex gap-2 overflow-x-auto pb-1 lg:grid lg:gap-3 lg:overflow-visible lg:pb-0" aria-label="Admin sections">
             {adminNav.map((item) => {
               const Icon = item.icon;
               const active = activeSection === item.id;
@@ -629,7 +797,7 @@ export default function Admin() {
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex h-12 items-center gap-4 rounded-md px-4 text-left text-[15px] font-semibold transition ${
+                  className={`flex h-12 shrink-0 items-center gap-3 rounded-md px-4 text-left text-sm font-semibold transition lg:w-full lg:text-[15px] ${
                     active ? "bg-white text-[#123a5a] shadow-sm" : "text-white/90 hover:bg-white/10"
                   }`}
                   onClick={() => setActiveSection(item.id)}
@@ -647,7 +815,7 @@ export default function Admin() {
             <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-2/3 text-[#123a5a] opacity-20 md:block">
               <ShoppingBag className="absolute left-[8%] top-24 h-10 w-10 rotate-[-18deg]" />
               <Boxes className="absolute left-[28%] top-10 h-7 w-7 rotate-[14deg]" />
-              <BadgePercent className="absolute left-[38%] top-28 h-8 w-8 rotate-[12deg]" />
+              <Sparkles className="absolute left-[38%] top-28 h-8 w-8 rotate-[12deg]" />
               <PackagePlus className="absolute left-[53%] top-16 h-11 w-11 rotate-[-10deg]" />
               <ClipboardList className="absolute left-[70%] top-28 h-7 w-7 rotate-[8deg]" />
               <SearchCheck className="absolute right-[6%] top-12 h-8 w-8 rotate-[-16deg]" />
@@ -655,33 +823,8 @@ export default function Admin() {
             <div className="relative z-10 max-w-xl">
               <h2 className="text-4xl font-black tracking-normal text-[#34363a] md:text-5xl">Hi, Welcome !</h2>
               <p className="mt-2 text-xl text-[#8f9296]">You're off to a great start.</p>
-              <div className="relative mt-9 max-w-[280px]">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a5a9]" />
-                <Input
-                  className="h-9 rounded-md border-[#bfc5c8] bg-white pl-9 text-sm shadow-sm"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </div>
             </div>
           </section>
-
-          <div className="mb-7 overflow-x-auto border-b border-[#cdd2d5]">
-            <div className="flex min-w-max gap-8 px-1">
-              {sectionTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  className={`border-b-2 px-1 pb-4 text-sm font-semibold transition ${
-                    activeSection === tab.id ? "border-[#3578ff] text-black" : "border-transparent text-black hover:border-[#9ab9ff]"
-                  }`}
-                  onClick={() => setActiveSection(tab.id)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {activeSection === "products" ? (
             <>
@@ -739,19 +882,19 @@ export default function Admin() {
 
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[1080px] border-collapse text-left text-xs">
-                    <thead className="text-[11px] uppercase text-[#34363a]">
+                    <thead>
                       <tr className="border-b border-[#dfe3e6]">
-                        <th className="w-20 border-r border-[#dfe3e6] px-8 py-5">
-                          <span className="block h-4 w-4 rounded border border-[#d0d5d8]" />
+                        <th className="w-14 px-5 py-4">
+                          <input type="checkbox" className="h-4 w-4 rounded border-[#bfc5c8] text-[#008060] focus:ring-[#008060]" disabled />
                         </th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">Product</th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">Status</th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">Inventory</th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">SEO</th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">Category</th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">Variants</th>
-                        <th className="border-r border-[#dfe3e6] px-6 py-5">Price</th>
-                        <th className="px-6 py-5 text-right">Actions</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">Product</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">Inventory</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">SEO</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">Category</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">Variants</th>
+                        <th className="px-6 py-4 text-left font-semibold text-[#5c5f62] tracking-wider">Price</th>
+                        <th className="px-6 py-4 text-right font-semibold text-[#5c5f62] tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="text-[#686c71]">
@@ -765,39 +908,39 @@ export default function Admin() {
                         </tr>
                       ) : (
                         filteredProducts.map((product) => (
-                          <tr key={product.id} className="border-b border-[#e5e8ea] last:border-b-0">
-                            <td className="border-r border-[#e5e8ea] px-8 py-5">
-                              <span className="block h-4 w-4 rounded border border-[#d0d5d8]" />
+                          <tr key={product.id} className="border-b border-[#e5e8ea] last:border-b-0 hover:bg-slate-50/85 transition-colors duration-150">
+                            <td className="px-5 py-4">
+                              <input type="checkbox" className="h-4 w-4 rounded border-[#bfc5c8] text-[#008060] focus:ring-[#008060]" disabled />
                             </td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5">
-                              <button type="button" className="font-semibold text-[#008060]" onClick={() => openEditDialog(product)}>
+                            <td className="px-6 py-4">
+                              <button type="button" className="font-semibold text-[#008060] hover:text-[#005a43] hover:underline transition-colors cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-[#008060] focus:ring-offset-2 rounded" onClick={() => openEditDialog(product)}>
                                 {product.title}
                               </button>
                               <div className="mt-1 text-[11px] text-[#8c9196]">{product.sku || product.handle || product.id}</div>
                             </td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                            <td className="px-6 py-4">
                               <StatusBadge status={product.status} />
                             </td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                            <td className="px-6 py-4">
                               <span className={product.inventory <= 5 ? "font-semibold text-[#b95000]" : "font-semibold text-[#008060]"}>
                                 {product.inventory}
                               </span>
                             </td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5">
+                            <td className="px-6 py-4">
                               <SeoBadge score={getSeoScore(productToForm(product)).score} />
                             </td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5">{product.category}</td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5 text-[#686c71]">{getVariantSummary(product)}</td>
-                            <td className="border-r border-[#e5e8ea] px-6 py-5 text-[#34363a]">{money(product.price)}</td>
-                            <td className="px-6 py-5">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 px-2 text-[#34363a]" onClick={() => openEditDialog(product)}>
+                            <td className="px-6 py-4 text-[#2f3135]">{product.category}</td>
+                            <td className="px-6 py-4 text-[#686c71]">{getVariantSummary(product)}</td>
+                            <td className="px-6 py-4 text-[#34363a] font-medium">{money(product.price)}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#34363a] hover:bg-slate-100 hover:text-black" onClick={() => openEditDialog(product)} title="Edit product">
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 px-2 text-[#ff5d75]"
+                                  className="h-8 w-8 p-0 text-[#ff5d75] hover:bg-red-50 hover:text-red-600"
                                   onClick={() => handleArchiveProduct(product)}
                                   disabled={product.status === "archived" || deleteMutation.isPending}
                                   title={product.status === "archived" ? "Product is already archived" : "Archive product"}
@@ -814,6 +957,18 @@ export default function Admin() {
                 </div>
               </section>
             </>
+          ) : activeSection === "performance" ? (
+            <PerformancePanel />
+          ) : activeSection === "gallery" ? (
+            <section className="min-w-0 rounded-lg border border-[#cdd2d5] bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-5">
+                <h3 className="text-2xl font-black text-[#34363a]">Gallery</h3>
+                <p className="mt-1 text-sm text-[#6d7175]">Upload, search, edit, and safely remove images from your store library.</p>
+              </div>
+              <MediaLibraryPanel mode="manage" />
+            </section>
+          ) : activeSection === "meta" ? (
+            <MetaPanel />
           ) : (
             <AdminSectionPanel
               activeSection={activeSection}
@@ -948,25 +1103,65 @@ export default function Admin() {
             <section className="rounded-lg border border-[#dde0dc] bg-white p-4">
               <div className="mb-4">
                 <div>
-                  <h3 className="font-black text-[#34363a]">Product image</h3>
-                  <p className="text-sm text-[#6d7175]">Upload to Cloudinary or choose an existing image from your media library.</p>
+                  <h3 className="font-black text-[#34363a]">Product images</h3>
+                  <p className="text-sm text-[#6d7175]">Add multiple angles or lighting conditions. Mark one image as the primary storefront image.</p>
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
-                <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#c9cccf] bg-[#fafbfb]">
-                  {form.imageUrl ? (
-                    <img src={form.imageUrl} alt={form.title || "Product image"} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="text-center text-[#6d7175]">
+              <div className="space-y-4">
+                {getProductImages(form).length > 0 ? (
+                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" aria-label="Product image gallery">
+                    {getProductImages(form).map((url, index) => {
+                      const isPrimary = form.imageUrl === url;
+                      return (
+                        <li key={url} className="overflow-hidden rounded-lg border border-[#d8dcdf] bg-white">
+                          <div className="relative aspect-square bg-[#f7f7f7]">
+                            <img
+                              src={url}
+                              alt={`${form.title || "Product"} image ${index + 1}`}
+                              className="h-full w-full object-contain"
+                            />
+                            {isPrimary && (
+                              <span className="absolute left-2 top-2 rounded-full bg-[#008060] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 border-t border-[#e5e8ea]">
+                            <button
+                              type="button"
+                              className="min-h-11 border-r border-[#e5e8ea] px-2 text-xs font-semibold text-[#006e52] hover:bg-[#f1f8f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#008060] disabled:text-[#8c9196]"
+                              onClick={() => setPrimaryProductImage(url)}
+                              disabled={isPrimary}
+                            >
+                              {isPrimary ? "Primary" : "Make primary"}
+                            </button>
+                            <button
+                              type="button"
+                              className="min-h-11 px-2 text-xs font-semibold text-[#b42318] hover:bg-[#fff4f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#b42318]"
+                              onClick={() => removeProductImage(url)}
+                              aria-label={`Remove image ${index + 1}`}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed border-[#c9cccf] bg-[#fafbfb] text-center text-[#6d7175]">
+                    <div>
                       <Image className="mx-auto mb-2 h-8 w-8" />
-                      <p className="text-sm">No image selected</p>
+                      <p className="text-sm">No product images selected</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <input
                     ref={productImageInputRef}
                     type="file"
+                    multiple
                     accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     className="hidden"
                     onChange={handleProductImageUpload}
@@ -981,20 +1176,15 @@ export default function Admin() {
                       <Upload className="h-6 w-6" />
                     </span>
                     <span className="font-black text-[#123a5a]">
-                      {productImageUploadMutation.isPending ? "Uploading image..." : "Upload image"}
+                      {productImageUploadMutation.isPending ? "Uploading images..." : "Upload product images"}
                     </span>
-                    <span className="mt-1 text-sm text-[#6d7175]">Saves the image to Cloudinary and applies it to this product.</span>
+                    <span className="mt-1 text-sm text-[#6d7175]">Select one or more images. Files are saved to Cloudinary.</span>
                   </button>
-                  <div className="flex flex-col gap-2 sm:flex-row">
+                  <div>
                     <Button type="button" variant="outline" className="border-[#b8d0dd] bg-[#eef5f9] font-semibold text-[#123a5a]" onClick={() => setMediaLibraryOpen(true)}>
                       <Image className="mr-2 h-4 w-4" />
-                      Choose from library
+                      Add from library
                     </Button>
-                    {form.imageUrl && (
-                      <Button type="button" variant="ghost" className="bg-[#fdecea] font-semibold text-[#b42318]" onClick={() => updateForm("imageUrl", "")}>
-                        Remove image
-                      </Button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1032,6 +1222,481 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
   );
 }
 
+function ImageAltTextPanel() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const { data: mediaItems = [], isLoading } = useQuery<Media[]>({
+    queryKey: ["media"],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/api/media"), { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load media");
+      return response.json();
+    },
+  });
+  const missingAlt = mediaItems.filter((item) => !item.alt?.trim());
+  const mutation = useMutation({
+    mutationFn: async ({ id, alt }: { id: string; alt: string }) => {
+      const response = await fetch(getApiUrl(`/api/media/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ alt }),
+      });
+      if (!response.ok) throw new Error("Could not save alt text");
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[variables.id];
+        return next;
+      });
+      toast({ title: "Alt text saved" });
+    },
+  });
+
+  return (
+    <section className="min-w-0 overflow-hidden rounded-lg border border-[#cdd2d5] bg-white p-4 shadow-sm sm:p-7">
+      <div className="mb-6">
+        <h3 className="text-2xl font-black text-[#34363a]">Missing image alt text</h3>
+        <p className="mt-1 text-sm text-[#6d7175]">Improve accessibility and image SEO from one convenient panel.</p>
+        <p className="mt-3 font-semibold text-[#b95000]" role="status">{missingAlt.length} image{missingAlt.length === 1 ? "" : "s"} need alt text</p>
+      </div>
+      {isLoading ? (
+        <p>Loading images…</p>
+      ) : missingAlt.length === 0 ? (
+        <div className="rounded-lg bg-[#f1f8f5] p-5 text-[#006e52]">All media images have alt text.</div>
+      ) : (
+        <ul className="grid min-w-0 gap-4 2xl:grid-cols-2">
+          {missingAlt.map((item) => {
+            const value = drafts[item.id] ?? "";
+            return (
+              <li key={item.id} className="grid min-w-0 gap-4 overflow-hidden rounded-xl border border-[#dde0dc] bg-[#fafbfb] p-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+                <div className="flex items-start justify-center">
+                  <img
+                    src={resolveMediaUrl(item.url)}
+                    alt=""
+                    className="aspect-square w-full max-w-28 rounded-lg border border-[#e3e6e8] bg-white object-contain p-1"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="line-clamp-2 break-all text-sm font-bold leading-5 text-[#34363a]"
+                    title={item.originalName}
+                  >
+                    {item.originalName}
+                  </p>
+                  <Label htmlFor={`alt-${item.id}`} className="mt-3 block font-semibold text-[#34363a]">Alt text</Label>
+                  <Textarea
+                    id={`alt-${item.id}`}
+                    className="mt-1 min-h-24 w-full resize-y bg-white text-[#202223]"
+                    maxLength={250}
+                    value={value}
+                    onChange={(event) => setDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
+                    placeholder="Describe the image’s meaningful content and purpose."
+                  />
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-xs text-[#6d7175]">{value.length}/250</span>
+                    <Button
+                      size="sm"
+                      className="min-h-10 w-full bg-[#006e52] px-4 font-semibold text-white hover:bg-[#005a43] disabled:bg-[#c7d8d2] disabled:text-[#5c6f68] sm:w-auto"
+                      disabled={!value.trim() || mutation.isPending}
+                      onClick={() => mutation.mutate({ id: item.id, alt: value.trim() })}
+                    >
+                      Apply alt text
+                    </Button>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function PerformancePanel() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: settings = {}, isLoading } = useQuery<Record<string, string>>({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/api/settings"));
+      if (!response.ok) throw new Error("Failed to load performance settings");
+      return response.json();
+    },
+  });
+  const mutation = useMutation({
+    mutationFn: async ({ key, enabled }: { key: string; enabled: boolean }) => {
+      const response = await fetch(getApiUrl(`/api/settings/${key}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ value: String(enabled) }),
+      });
+      if (!response.ok) throw new Error("Could not update performance setting");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast({ title: "Performance setting updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    },
+  });
+  const options = [
+    {
+      key: "defer_below_fold_scripts",
+      title: "Defer below-the-fold scripts",
+      description: "Delays optional third-party scripts marked as below-fold until the page has loaded. Core ES module scripts remain standards-compliant and already defer automatically.",
+    },
+    {
+      key: "lazy_load_below_fold_images",
+      title: "Lazy load below-the-fold images",
+      description: "Uses native browser lazy loading for storefront product images and gallery thumbnails to reduce initial page weight.",
+    },
+  ];
+
+  return (
+    <section className="rounded-lg border border-[#cdd2d5] bg-white p-5 shadow-sm sm:p-7">
+      <div className="mb-6">
+        <h3 className="text-2xl font-black text-[#34363a]">Performance</h3>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6d7175]">Control safe front-end optimizations without editing code. Changes are stored in Neon and apply across the storefront.</p>
+      </div>
+      <div className="grid gap-4">
+        {options.map((option) => {
+          const enabled = settings[option.key] === "true";
+          return (
+            <div key={option.key} className="flex flex-col gap-4 rounded-xl border border-[#dde0dc] bg-[#fafbfb] p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-2xl">
+                <h4 className="font-bold text-[#34363a]">{option.title}</h4>
+                <p className="mt-1 text-sm leading-6 text-[#6d7175]">{option.description}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enabled}
+                aria-label={option.title}
+                disabled={isLoading || mutation.isPending}
+                onClick={() => mutation.mutate({ key: option.key, enabled: !enabled })}
+                className={`relative h-8 w-14 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#008060] focus-visible:ring-offset-2 disabled:opacity-60 ${
+                  enabled ? "bg-[#008060]" : "bg-[#8c9196]"
+                }`}
+              >
+                <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-7" : "translate-x-1"}`} />
+                <span className="sr-only">{enabled ? "Enabled" : "Disabled"}</span>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function StoreSettingsPanel() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const { data: settings = {}, isLoading } = useQuery<Record<string, string>>({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/api/settings"));
+      if (!response.ok) throw new Error("Failed to load store settings");
+      return response.json();
+    },
+  });
+
+  useEffect(() => {
+    setFacebookUrl(settings.facebook_reviews_url || "");
+  }, [settings.facebook_reviews_url]);
+
+  const mutation = useMutation({
+    mutationFn: async (value: string) => {
+      const response = await fetch(getApiUrl("/api/settings/facebook_reviews_url"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ value }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Could not update Facebook reviews URL");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast({ title: "Facebook reviews URL updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = facebookUrl.trim();
+    try {
+      const url = new URL(value);
+      if (!["http:", "https:"].includes(url.protocol)) {
+        throw new Error();
+      }
+    } catch {
+      toast({
+        title: "Enter a valid URL",
+        description: "Use the full Facebook reviews URL, including https://",
+        variant: "destructive",
+      });
+      return;
+    }
+    mutation.mutate(value);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-6 rounded-xl border border-[#dfe3e6] bg-[#f8faf9] p-4 sm:p-5">
+      <div className="grid gap-4 lg:grid-cols-[1fr_minmax(260px,520px)] lg:items-end">
+        <div>
+          <h4 className="text-lg font-black text-[#34363a]">Storefront links</h4>
+          <p className="mt-1 text-sm leading-6 text-[#6d7175]">
+            Update customer-facing links from the admin panel. The storefront reads this value from Neon through the settings table.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="facebook-reviews-url" className="font-semibold text-[#34363a]">
+            Facebook reviews URL
+          </Label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="facebook-reviews-url"
+              type="url"
+              inputMode="url"
+              placeholder="https://www.facebook.com/your-page/reviews"
+              value={facebookUrl}
+              onChange={(event) => setFacebookUrl(event.target.value)}
+              disabled={isLoading || mutation.isPending}
+              className="bg-white"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || mutation.isPending}
+              className="bg-[#008060] text-white hover:bg-[#006e52]"
+            >
+              {mutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function MetaPanel() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
+  const [form, setForm] = useState({
+    metaTitle: "",
+    metaDescription: "",
+    metaKeywords: "",
+    faviconUrl: "",
+  });
+  const { data: settings = {}, isLoading } = useQuery<Record<string, string>>({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await fetch(getApiUrl("/api/settings"));
+      if (!response.ok) throw new Error("Failed to load meta settings");
+      return response.json();
+    },
+  });
+
+  useEffect(() => {
+    setForm({
+      metaTitle: settings.meta_title || "",
+      metaDescription: settings.meta_description || "",
+      metaKeywords: settings.meta_keywords || "",
+      faviconUrl: settings.favicon_url || "",
+    });
+  }, [settings.meta_title, settings.meta_description, settings.meta_keywords, settings.favicon_url]);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const updates = [
+        ["meta_title", form.metaTitle.trim()],
+        ["meta_description", form.metaDescription.trim()],
+        ["meta_keywords", form.metaKeywords.trim()],
+        ["favicon_url", form.faviconUrl.trim()],
+      ] as const;
+
+      const responses = await Promise.all(
+        updates.map(async ([key, value]) => {
+          const response = await fetch(getApiUrl(`/api/settings/${key}`), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ value }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.message || `Could not update ${key}`);
+          return data;
+        })
+      );
+      return responses;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast({ title: "Meta settings updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  function updateField(key: keyof typeof form, value: string) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const favicon = form.faviconUrl.trim();
+    if (favicon) {
+      try {
+        const parsedUrl = new URL(favicon);
+        if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error();
+      } catch {
+        toast({
+          title: "Enter a valid favicon URL",
+          description: "Use a full image URL starting with https:// or select one from the gallery.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    mutation.mutate();
+  }
+
+  return (
+    <>
+      <section className="rounded-lg border border-[#cdd2d5] bg-white p-5 shadow-sm sm:p-7">
+        <div className="mb-6">
+          <h3 className="text-2xl font-black text-[#34363a]">Meta</h3>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6d7175]">
+            Edit the storefront browser title, search description, keywords, and favicon from one place.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="meta-title" className="font-semibold text-[#34363a]">Meta title</Label>
+              <Input
+                id="meta-title"
+                value={form.metaTitle}
+                onChange={(event) => updateField("metaTitle", event.target.value)}
+                maxLength={70}
+                placeholder="Tiny Treasures Baby Boutique"
+                className="bg-white"
+                disabled={isLoading || mutation.isPending}
+              />
+              <p className="text-xs text-[#6d7175]">{form.metaTitle.length}/70 characters</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meta-description" className="font-semibold text-[#34363a]">Meta description</Label>
+              <Textarea
+                id="meta-description"
+                value={form.metaDescription}
+                onChange={(event) => updateField("metaDescription", event.target.value)}
+                maxLength={170}
+                rows={4}
+                placeholder="Shop curated baby gifts, soft essentials, and keepsakes."
+                className="resize-y bg-white"
+                disabled={isLoading || mutation.isPending}
+              />
+              <p className="text-xs text-[#6d7175]">{form.metaDescription.length}/170 characters</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meta-keywords" className="font-semibold text-[#34363a]">Keywords</Label>
+              <Input
+                id="meta-keywords"
+                value={form.metaKeywords}
+                onChange={(event) => updateField("metaKeywords", event.target.value)}
+                maxLength={300}
+                placeholder="baby boutique, baby gifts, burp cloths, baby books"
+                className="bg-white"
+                disabled={isLoading || mutation.isPending}
+              />
+              <p className="text-xs text-[#6d7175]">Separate keywords with commas.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="favicon-url" className="font-semibold text-[#34363a]">Favicon image URL</Label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="favicon-url"
+                  type="url"
+                  inputMode="url"
+                  value={form.faviconUrl}
+                  onChange={(event) => updateField("faviconUrl", event.target.value)}
+                  placeholder="https://example.com/favicon.png"
+                  className="bg-white"
+                  disabled={isLoading || mutation.isPending}
+                />
+                <Button type="button" variant="outline" onClick={() => setMediaLibraryOpen(true)}>
+                  <Image className="mr-2 h-4 w-4" />
+                  Choose
+                </Button>
+              </div>
+            </div>
+
+            <Button type="submit" disabled={isLoading || mutation.isPending} className="bg-[#008060] text-white hover:bg-[#006e52]">
+              {mutation.isPending ? "Saving..." : "Save meta settings"}
+            </Button>
+          </div>
+
+          <aside className="rounded-xl border border-[#dfe3e6] bg-[#fafbfb] p-4">
+            <h4 className="font-black text-[#34363a]">Preview</h4>
+            <div className="mt-4 rounded-lg border border-[#dfe3e6] bg-white p-4">
+              {form.faviconUrl.trim() ? (
+                <img src={form.faviconUrl.trim()} alt="Favicon preview" className="mb-3 h-10 w-10 rounded object-contain" />
+              ) : (
+                <div className="mb-3 grid h-10 w-10 place-items-center rounded bg-pink-50 text-pink-500">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+              )}
+              <div className="line-clamp-2 text-sm font-semibold text-[#1a0dab]">
+                {form.metaTitle.trim() || "Tiny Treasures Baby Boutique"}
+              </div>
+              <div className="mt-1 text-xs text-[#006621]">tiny-treasures.example</div>
+              <p className="mt-2 line-clamp-3 text-sm leading-6 text-[#4d5156]">
+                {form.metaDescription.trim() || "Shop Tiny Treasures, a curated baby boutique for thoughtful gifts, soft essentials, and sweet keepsakes."}
+              </p>
+            </div>
+          </aside>
+        </form>
+      </section>
+
+      <Dialog open={mediaLibraryOpen} onOpenChange={setMediaLibraryOpen}>
+        <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Choose favicon image</DialogTitle>
+          </DialogHeader>
+          <MediaLibraryPanel
+            mode="select"
+            onSelect={(media) => {
+              updateField("faviconUrl", resolveMediaUrl(media.url));
+              setMediaLibraryOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function AdminSectionPanel({
   activeSection,
   stats,
@@ -1044,6 +1709,7 @@ function AdminSectionPanel({
   onAddProduct: () => void;
 }) {
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const [orders, setOrders] = useState<AdminOrder[]>(initialAdminOrders);
 
   const titleMap: Record<AdminSection, string> = {
     home: "Home",
@@ -1051,8 +1717,9 @@ function AdminSectionPanel({
     products: "Products",
     customers: "Customers",
     analytics: "Analytics",
-    marketing: "Marketing",
-    discounts: "Discounts",
+    gallery: "Gallery",
+    meta: "Meta",
+    performance: "Performance",
   };
 
   if (activeSection === "home") {
@@ -1074,100 +1741,19 @@ function AdminSectionPanel({
           <MetricCard icon={<BarChart3 className="h-5 w-5" />} label="Inventory value" value={money(stats.value)} />
           <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="SEO ready" value={`${stats.seoReady}/${productCount}`} />
         </div>
+        <StoreSettingsPanel />
       </section>
     );
   }
 
-  if (activeSection === "orders") {
-    const orders: AdminOrder[] = [
-      {
-        id: "#1007",
-        date: "06/18/2026 10:08AM",
-        customer: "Avery Johnson",
-        email: "avery.johnson@example.com",
-        phone: "(555) 014-1007",
-        payment: "Paid",
-        fulfillment: "Unfulfilled",
-        total: "$68.00",
-        subtotal: "$62.00",
-        shipping: "$0.00",
-        tax: "$6.00",
-        shippingAddress: "214 Magnolia Lane, Austin, TX 78704",
-        billingAddress: "214 Magnolia Lane, Austin, TX 78704",
-        deliveryMethod: "Standard shipping",
-        notes: "Gift wrap requested. Include the handwritten note from checkout.",
-        items: [
-          { name: "Little Arrival Gift Box", sku: "GIFT-LITTLE-ARRIVAL", quantity: 1, price: "$68.00" },
-        ],
-      },
-      {
-        id: "#1006",
-        date: "06/17/2026 02:34PM",
-        customer: "Maya Thompson",
-        email: "maya.thompson@example.com",
-        phone: "(555) 014-1006",
-        payment: "Authorized",
-        fulfillment: "Partially Fulfilled",
-        total: "$124.50",
-        subtotal: "$116.00",
-        shipping: "$0.00",
-        tax: "$8.50",
-        shippingAddress: "88 Willow Street, Portland, OR 97205",
-        billingAddress: "88 Willow Street, Portland, OR 97205",
-        deliveryMethod: "Standard shipping",
-        trackingNumber: "TT94001006",
-        notes: "One item is packed. Waiting on restock for the blanket.",
-        items: [
-          { name: "Organic Cotton Swaddle", sku: "SWD-COTTON-SAGE", quantity: 2, price: "$32.00" },
-          { name: "Keepsake Rattle", sku: "TOY-RATTLE-WOOD", quantity: 1, price: "$28.00" },
-          { name: "Soft Knit Blanket", sku: "BLK-KNIT-CREAM", quantity: 1, price: "$32.00" },
-        ],
-      },
-      {
-        id: "#1005",
-        date: "06/16/2026 09:41AM",
-        customer: "Elliot Brooks",
-        email: "elliot.brooks@example.com",
-        phone: "(555) 014-1005",
-        payment: "Paid",
-        fulfillment: "Fulfilled",
-        total: "$42.00",
-        subtotal: "$38.00",
-        shipping: "$0.00",
-        tax: "$4.00",
-        shippingAddress: "502 Cedar Court, Denver, CO 80203",
-        billingAddress: "502 Cedar Court, Denver, CO 80203",
-        deliveryMethod: "Standard shipping",
-        trackingNumber: "TT94001005",
-        notes: "Delivered to front desk.",
-        items: [
-          { name: "Keepsake Rattle", sku: "TOY-RATTLE-WOOD", quantity: 1, price: "$28.00" },
-          { name: "Milestone Card Set", sku: "CARD-MILESTONE", quantity: 1, price: "$14.00" },
-        ],
-      },
-      {
-        id: "#1004",
-        date: "06/15/2026 04:20PM",
-        customer: "Nora Williams",
-        email: "nora.williams@example.com",
-        phone: "(555) 014-1004",
-        payment: "Paid",
-        fulfillment: "Unfulfilled",
-        total: "$89.99",
-        subtotal: "$82.99",
-        shipping: "$0.00",
-        tax: "$7.00",
-        shippingAddress: "19 Rose Avenue, Charlotte, NC 28202",
-        billingAddress: "19 Rose Avenue, Charlotte, NC 28202",
-        deliveryMethod: "Standard shipping",
-        notes: "Customer asked for neutral packaging.",
-        items: [
-          { name: "Little Arrival Gift Box", sku: "GIFT-LITTLE-ARRIVAL", quantity: 1, price: "$68.00" },
-          { name: "Milestone Card Set", sku: "CARD-MILESTONE", quantity: 1, price: "$21.99" },
-        ],
-      },
-    ];
+  function deleteOrder(order: AdminOrder) {
+    const confirmed = window.confirm(`Delete order ${order.id} for ${order.customer}? This cannot be undone.`);
+    if (!confirmed) return;
+    setOrders((current) => current.filter((item) => item.id !== order.id));
+    setSelectedOrder((current) => (current?.id === order.id ? null : current));
+  }
 
+  if (activeSection === "orders") {
     return (
       <>
         <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">
@@ -1179,7 +1765,7 @@ function AdminSectionPanel({
             </Button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-xs">
+            <table className="w-full min-w-[920px] text-left text-xs">
               <thead className="text-[11px] uppercase text-[#34363a]">
                 <tr className="border-b border-[#dfe3e6]">
                   <th className="px-6 py-5">Order</th>
@@ -1188,29 +1774,51 @@ function AdminSectionPanel({
                   <th className="px-6 py-5">Payment Status</th>
                   <th className="px-6 py-5">Fulfillment Status</th>
                   <th className="px-6 py-5">Total</th>
+                  <th className="px-6 py-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-[#686c71]">
-                {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-[#e5e8ea] last:border-b-0">
-                    <td className="px-6 py-5">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedOrder(order)}
-                        className="font-semibold text-[#008060] underline-offset-4 transition hover:text-[#006e52] hover:underline focus:outline-none focus:ring-2 focus:ring-[#008060] focus:ring-offset-2"
-                      >
-                        {order.id}
-                      </button>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-[#6d7175]">
+                      No orders to display.
                     </td>
-                    <td className="px-6 py-5">{order.date}</td>
-                    <td className="px-6 py-5">{order.customer}</td>
-                    <td className={`px-6 py-5 ${order.payment === "Paid" ? "text-[#008060]" : "text-[#b95000]"}`}>{order.payment}</td>
-                    <td className={`px-6 py-5 ${order.fulfillment === "Fulfilled" ? "text-[#008060]" : order.fulfillment === "Partially Fulfilled" ? "text-[#b42318]" : "text-[#b95000]"}`}>
-                      {order.fulfillment}
-                    </td>
-                    <td className="px-6 py-5 text-[#34363a]">{order.total}</td>
                   </tr>
-                ))}
+                ) : (
+                  orders.map((order) => (
+                    <tr key={order.id} className="border-b border-[#e5e8ea] last:border-b-0">
+                      <td className="px-6 py-5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedOrder(order)}
+                          className="font-semibold text-[#008060] underline-offset-4 transition hover:text-[#006e52] hover:underline focus:outline-none focus:ring-2 focus:ring-[#008060] focus:ring-offset-2"
+                        >
+                          {order.id}
+                        </button>
+                      </td>
+                      <td className="px-6 py-5">{order.date}</td>
+                      <td className="px-6 py-5">{order.customer}</td>
+                      <td className={`px-6 py-5 ${order.payment === "Paid" ? "text-[#008060]" : "text-[#b95000]"}`}>{order.payment}</td>
+                      <td className={`px-6 py-5 ${order.fulfillment === "Fulfilled" ? "text-[#008060]" : order.fulfillment === "Partially Fulfilled" ? "text-[#b42318]" : "text-[#b95000]"}`}>
+                        {order.fulfillment}
+                      </td>
+                      <td className="px-6 py-5 text-[#34363a]">{order.total}</td>
+                      <td className="px-6 py-5 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1.5 px-2 text-[#d72c0d] hover:bg-[#fdecea] hover:text-[#b42318]"
+                          onClick={() => deleteOrder(order)}
+                          title={`Delete order ${order.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -1221,10 +1829,14 @@ function AdminSectionPanel({
             {selectedOrder && (
               <>
                 <DialogHeader>
-                  <DialogTitle>Order {selectedOrder.id}</DialogTitle>
-                  <p className="text-sm text-[#686c71]">
-                    Placed {selectedOrder.date} by {selectedOrder.customer}
-                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <DialogTitle>Order {selectedOrder.id}</DialogTitle>
+                      <p className="text-sm text-[#686c71]">
+                        Placed {selectedOrder.date} by {selectedOrder.customer}
+                      </p>
+                    </div>
+                  </div>
                 </DialogHeader>
 
                 <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
@@ -1506,7 +2118,7 @@ function AnalyticsImportPanel() {
             <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="Impressions" value={metrics.summary.impressions.toLocaleString()} />
             <MetricCard icon={<ShoppingBag className="h-5 w-5" />} label="Clicks" value={metrics.summary.clicks.toLocaleString()} />
             <MetricCard icon={<BarChart3 className="h-5 w-5" />} label="CTR" value={`${(metrics.summary.ctr * 100).toFixed(2)}%`} />
-            <MetricCard icon={<BadgePercent className="h-5 w-5" />} label="Avg. position" value={metrics.summary.position ? metrics.summary.position.toFixed(1) : "0.0"} />
+            <MetricCard icon={<SearchCheck className="h-5 w-5" />} label="Avg. position" value={metrics.summary.position ? metrics.summary.position.toFixed(1) : "0.0"} />
           </section>
 
           <section className="rounded-lg border border-[#cdd2d5] bg-white shadow-sm">

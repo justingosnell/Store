@@ -24,7 +24,42 @@ services:
         sync: true
       - key: INIT_ADMIN_PASSWORD
         sync: true
+      - key: SQUARE_ENVIRONMENT
+        value: production
+      - key: SQUARE_ACCESS_TOKEN
+        sync: true
+      - key: SQUARE_LOCATION_ID
+        sync: true
+      - key: SQUARE_REDIRECT_URL
+        sync: true
     nixpacks:
       aptPackages:
         - build-essential
         - python3
+        - postgresql-client
+
+  - type: cron
+    name: tiny-treasures-database-backup
+    env: node
+    schedule: "0 3 * * *"
+    buildCommand: npm install
+    startCommand: bash scripts/backup-database.sh
+    envVars:
+      - key: BACKUP_DATABASE_URL
+        sync: true
+      - key: BACKUP_S3_BUCKET
+        sync: true
+      - key: BACKUP_S3_PREFIX
+        value: database-backups
+      - key: AWS_ACCESS_KEY_ID
+        sync: true
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: true
+      - key: AWS_DEFAULT_REGION
+        sync: true
+      - key: BACKUP_RETENTION_DAYS
+        value: 14
+    nixpacks:
+      aptPackages:
+        - awscli
+        - postgresql-client

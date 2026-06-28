@@ -170,15 +170,15 @@ export default function Categories() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-purple-50">
       <AppHeader />
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-amber-900 mb-2">Category Management</h1>
-            <p className="text-amber-700">
-              Manage location categories, icons, and display order
+            <h1 className="text-4xl font-bold text-gray-950 mb-2">Category Management</h1>
+            <p className="text-gray-600">
+              Manage boutique product categories, icons, and display order
             </p>
           </div>
           <Button
@@ -186,7 +186,7 @@ export default function Categories() {
               setSelectedCategory(null);
               setDialogOpen(true);
             }}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md hover:from-pink-600 hover:to-purple-600"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Category
@@ -194,16 +194,16 @@ export default function Categories() {
         </div>
 
         {categories.length === 0 ? (
-          <Card className="border-2 border-dashed border-amber-300">
+          <Card className="border-2 border-dashed border-pink-200 bg-white/90">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <p className="text-amber-700 text-lg mb-4">No categories yet</p>
+              <p className="text-gray-600 text-lg mb-4">No categories yet</p>
               <Button
                 onClick={() => {
                   setSelectedCategory(null);
                   setDialogOpen(true);
                 }}
                 variant="outline"
-                className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                className="rounded-full border-pink-200 text-pink-600 hover:bg-pink-50"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Your First Category
@@ -215,7 +215,7 @@ export default function Categories() {
             {categories.map((category) => (
               <Card
                 key={category.id}
-                className="border-2 border-amber-200 hover:border-orange-400 transition-all hover:shadow-lg"
+                className="border-2 border-pink-100 bg-white/95 transition-all hover:border-pink-300 hover:shadow-lg"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -227,7 +227,7 @@ export default function Categories() {
                         {category.icon}
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-amber-900 mt-[50px]">
+                        <CardTitle className="text-xl text-gray-950 mt-1">
                           {category.name}
                         </CardTitle>
                         <span
@@ -241,15 +241,15 @@ export default function Categories() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <GripVertical className="h-4 w-4 text-amber-400" />
-                      <span className="text-xs text-amber-600 font-medium">
+                      <GripVertical className="h-4 w-4 text-pink-300" />
+                      <span className="text-xs text-gray-500 font-medium">
                         {category.displayOrder}
                       </span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-white text-lg mb-4 min-h-[3rem]">
+                  <CardDescription className="text-gray-600 text-sm mb-4 min-h-[3rem]">
                     {category.description || "No description"}
                   </CardDescription>
                   <div className="flex gap-2">
@@ -257,7 +257,7 @@ export default function Categories() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(category)}
-                      className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+                      className="flex-1 border-pink-200 text-pink-600 hover:bg-pink-50"
                     >
                       <Pencil className="mr-1 h-3 w-3" />
                       Edit
@@ -294,7 +294,7 @@ export default function Categories() {
             <AlertDialogDescription>
               This will permanently delete the category "{categoryToDelete?.name}".
               This action cannot be undone. You cannot delete a category that is being
-              used by any locations.
+              used by any products.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

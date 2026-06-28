@@ -8,7 +8,3 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <App />
   </React.StrictMode>
 );
-
-if (typeof window !== 'undefined' && window.hideLoadingScreen) {
-  window.hideLoadingScreen();
-}

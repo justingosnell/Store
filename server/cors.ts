@@ -23,6 +23,9 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Access-Control-Allow-Credentials", "true");
   }
+  if (origin && !allowedOrigins.includes(origin)) {
+    return res.status(403).json({ message: "Origin is not allowed" });
+  }
 
   res.header("Vary", "Origin");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");

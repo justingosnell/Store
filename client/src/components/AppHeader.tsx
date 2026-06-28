@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapIcon, LogIn, User, LogOut, KeyRound } from "lucide-react";
+import { Baby, LogIn, User, LogOut, KeyRound, Store } from "lucide-react";
 import { LoginModal } from "./LoginModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,27 +51,30 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 w-full border-b border-pink-100 bg-white/95 text-gray-800 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/85">
         <div className="flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex-1"></div>
           
           <button 
             onClick={handleGoHome}
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none p-0"
+            className="group flex cursor-pointer items-center gap-2 border-none bg-transparent p-0 transition-opacity duration-200 hover:opacity-90"
             aria-label="Go to home page"
           >
             {logoUrl ? (
               <img
                 src={logoUrl}
-                alt="Site logo"
-                className="h-[75px] w-[75px] object-contain"
+                alt="Tiny Treasures logo"
+                className="h-12 w-12 object-contain"
               />
             ) : (
-              <MapIcon className="h-6 w-6 text-primary" />
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-purple-400 shadow-md transition-transform group-hover:scale-105">
+                <Baby className="h-5 w-5 text-white" />
+              </span>
             )}
-            <h1 className="luckiest-guy-regular text-2xl text-foreground" data-testid="text-app-title">
-              Joes Adventures
-            </h1>
+            <span className="flex flex-col text-left leading-tight" data-testid="text-app-title">
+              <span className="text-lg font-bold tracking-tight text-pink-600">Tiny Treasures</span>
+              <span className="-mt-1 text-[10px] font-medium uppercase tracking-widest text-purple-400">Baby Boutique</span>
+            </span>
           </button>
 
           <div className="flex-1 flex items-center justify-end gap-2">
@@ -87,7 +90,7 @@ export function AppHeader() {
                   <DropdownMenuLabel>Admin Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleGoToAdmin}>
-                    <MapIcon className="h-4 w-4 mr-2" />
+                    <Store className="h-4 w-4 mr-2" />
                     Admin Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleChangePassword}>

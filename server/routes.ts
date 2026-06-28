@@ -1,7 +1,6 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
-import createMemoryStore from "memorystore";
 import PostgresStore from "connect-pg-simple";
 import { Pool } from "pg";
 import helmet from "helmet";
@@ -17,12 +16,11 @@ import fs from "fs";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { Readable } from "stream";
+import { createRateLimiter, requestId, requireTrustedOrigin } from "./security";
+import { createSquarePaymentLink } from "./square-checkout";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Initialize MemoryStore
-const MemoryStore = createMemoryStore(session);
 
 // XSS Protection: Sanitize user input to prevent XSS attacks
 function sanitizeInput(input: string): string {
@@ -324,17 +322,18 @@ async function uploadFileToConfiguredStorage(file: Express.Multer.File): Promise
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  if (process.env.DATABASE_URL) {
-    // Initialize database with IPv4 resolution
-    console.log("\n🔌 Initializing database connection...");
-    await initializeDatabase();
-    console.log("✅ Database initialized\n");
-    
-    // Run migrations to ensure database schema is up to date
-    await runMigrations();
-  } else {
-    console.warn("DATABASE_URL is not set. Using in-memory storage for local development.");
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required. The app does not use in-memory storage.");
   }
+
+  // Initialize database with IPv4 resolution
+  console.log("\n🔌 Initializing database connection...");
+  await initializeDatabase();
+  console.log("✅ Database initialized\n");
+
+  // Run migrations to ensure database schema is up to date
+  await runMigrations();
   
   // Ensure storage is initialized before setting up routes
   await ensureStorageReady();
@@ -366,39 +365,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     noSniff: true,
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   }));
+  app.use(requestId);
+  app.use(requireTrustedOrigin);
+  app.use("/api", createRateLimiter({ windowMs: 60_000, max: 180, message: "Too many requests. Please try again shortly." }));
+  app.use("/api/auth/login", createRateLimiter({ windowMs: 15 * 60_000, max: 10, message: "Too many login attempts. Please wait and try again." }));
+  app.use("/api/checkout", createRateLimiter({ windowMs: 60_000, max: 12, message: "Too many checkout attempts. Please wait and try again." }));
   
   // Serve uploaded files statically
 
   // Session configuration
   const isProduction = process.env.NODE_ENV === 'production';
   const sessionCookieName = process.env.SESSION_COOKIE_NAME || "connect.sid";
-  const sessionStoreName = isProduction && process.env.DATABASE_URL ? "PostgreSQL" : "Memory";
-  
-  let sessionStore: any;
-  if (isProduction && process.env.DATABASE_URL) {
-    // Use PostgreSQL session store in production
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-    });
-    sessionStore = new (PostgresStore(session))({
-      pool: pool,
-      tableName: 'session',
-      createTableIfMissing: true,
-    });
-    console.log("💾 Using PostgreSQL session store");
-  } else {
-    // Use in-memory store for development
-    sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
-    });
-    console.log("💾 Using in-memory session store");
+  if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
+    throw new Error("SESSION_SECRET must be set to at least 32 characters in production");
   }
+  const sessionStoreName = "PostgreSQL";
+  const requiresSsl =
+    isProduction || /[?&]sslmode=require(?:&|$)/i.test(databaseUrl);
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: requiresSsl ? { rejectUnauthorized: false } : undefined,
+  });
+  const sessionStore = new (PostgresStore(session))({
+    pool,
+    tableName: "session",
+    createTableIfMissing: true,
+  });
+  console.log("💾 Using PostgreSQL session store");
   
   app.use(
     session({
       name: sessionCookieName,
       store: sessionStore,
-      secret: process.env.SESSION_SECRET || "roadside-mapper-secret-key-change-in-production",
+      secret: process.env.SESSION_SECRET || "tiny-treasures-session-secret-change-in-production",
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -413,8 +412,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log("🍪 Session config:", { name: sessionCookieName, secure: isProduction, store: sessionStoreName, httpOnly: true, sameSite: 'lax' });
 
   // ============ Health Check Endpoint (for uptime monitoring) ============
-  app.get("/health", (req: Request, res: Response) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  app.get("/health", async (_req: Request, res: Response) => {
+    try {
+      await storage.getAllProducts();
+      res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptimeSeconds: Math.round(process.uptime()),
+        database: "connected",
+        squareConfigured: Boolean(process.env.SQUARE_ACCESS_TOKEN && process.env.SQUARE_LOCATION_ID),
+      });
+    } catch {
+      res.status(503).json({ status: "degraded", timestamp: new Date().toISOString(), database: "unavailable" });
+    }
+  });
+
+  app.post("/api/checkout/square", async (req: Request, res: Response) => {
+    try {
+      const body = z.object({
+        items: z.array(z.object({ productId: z.string().min(1), quantity: z.number().int().min(1).max(25) })).min(1).max(50),
+        giftBox: z.boolean().optional(),
+        giftNote: z.string().max(500).optional(),
+      }).parse(req.body);
+      const lines = [];
+      for (const item of body.items) {
+        const product = await storage.getProduct(item.productId);
+        if (!product || product.status !== "active") return res.status(400).json({ message: "A cart item is unavailable" });
+        if ((product.inventory || 0) < item.quantity) return res.status(409).json({ message: `Not enough inventory for ${product.title}` });
+        lines.push({ product, quantity: item.quantity });
+      }
+      const checkout = await createSquarePaymentLink({ lines, giftBox: body.giftBox, giftNote: body.giftNote });
+      res.json(checkout);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid checkout request" });
+      res.status(503).json({ message: error instanceof Error ? error.message : "Checkout unavailable" });
+    }
   });
 
   // ============ Authentication Routes ============
@@ -449,11 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`🔐 Password comparison for user "${username}"`);
-      console.log(`   Stored hash starts with: ${user.password?.substring(0, 15)}...`);
-      console.log(`   Stored hash length: ${user.password?.length}`);
       const isValidPassword = await bcrypt.compare(password, user.password);
-      console.log(`   Password match result: ${isValidPassword}`);
       if (!isValidPassword) {
         // Record failed login attempt (locks after 10 attempts)
         await storage.recordFailedLogin(user.id);
@@ -1030,7 +1058,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update media metadata
   app.put("/api/media/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { alt, caption } = req.body;
+      const { alt, caption } = z.object({
+        alt: z.string().trim().max(250).optional(),
+        caption: z.string().trim().max(1000).optional(),
+      }).parse(req.body);
       const updates: Partial<any> = {};
       
       if (alt !== undefined) updates.alt = alt;
@@ -1042,8 +1073,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Media not found" });
       }
 
+      await logAuditEvent(req, "media.metadata_updated", "media", mediaItem.id, `Updated image metadata for "${mediaItem.originalName}"`, {
+        altUpdated: alt !== undefined,
+        captionUpdated: caption !== undefined,
+      });
       res.json(mediaItem);
     } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid media metadata" });
       console.error("Update media error:", error);
       res.status(500).json({ message: "Failed to update media" });
     }
@@ -1052,6 +1088,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete media
   app.delete("/api/media/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (req.headers["x-confirm-action"] !== "delete-media") {
+        return res.status(409).json({ message: "Media deletion requires explicit confirmation." });
+      }
       const mediaItem = await storage.getMedia(req.params.id);
       if (!mediaItem) {
         return res.status(404).json({ message: "Media not found" });
@@ -2144,10 +2183,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update setting (admin only)
   app.put("/api/settings/:key", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { value } = req.body;
-      
-      if (!value) {
-        return res.status(400).json({ message: "Value is required" });
+      const { value } = z.object({
+        value: z.string().max(5000),
+      }).parse(req.body);
+      const booleanSettings = new Set([
+        "defer_below_fold_scripts",
+        "lazy_load_below_fold_images",
+      ]);
+
+      if (booleanSettings.has(req.params.key) && value !== "true" && value !== "false") {
+        return res.status(400).json({ message: "This setting must be true or false" });
+      }
+
+      const urlSettings = new Set(["facebook_reviews_url", "favicon_url"]);
+      if (urlSettings.has(req.params.key) && value.trim()) {
+        try {
+          const parsedUrl = new URL(value);
+          if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+            return res.status(400).json({ message: "This setting must be a valid http or https URL" });
+          }
+        } catch {
+          return res.status(400).json({ message: "This setting must be a valid URL" });
+        }
       }
 
       const setting = await storage.setSetting({
@@ -2159,6 +2216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(setting);
     } catch (error) {
       console.error("Update setting error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid setting value", errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to update setting" });
     }
   });

@@ -30,6 +30,7 @@ Baby-Boutique-Builder/
 
 # Uploads
 uploads/
+backups/
 
 # TypeScript
 .tsbuildinfo

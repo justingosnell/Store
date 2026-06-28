@@ -28,6 +28,7 @@ function productInputToRow(input: InsertProduct, id: string, existing?: Product)
     inventory: input.inventory ?? existing?.inventory ?? 0,
     status: input.status ?? existing?.status ?? "active",
     imageUrl: input.imageUrl ?? existing?.imageUrl ?? "",
+    imageUrls: input.imageUrls ?? existing?.imageUrls ?? "[]",
     ageRange: input.ageRange ?? existing?.ageRange ?? "",
     material: input.material ?? existing?.material ?? "",
     variants: input.variants ?? existing?.variants ?? "{}",
@@ -115,7 +116,6 @@ export class MemStorage implements IStorage {
     this.seedDefaultAdmin();
     this.seedDefaultCategories();
     this.seedMockLocations();
-    this.seedDefaultProducts();
   }
 
   // Seed default admin account (only if INIT_ADMIN_USERNAME env var is set)
@@ -402,90 +402,6 @@ export class MemStorage implements IStorage {
         customFields: loc.customFields ?? "{}",
         isBookmarked: loc.isBookmarked ?? "false",
       });
-    });
-  }
-
-  private seedDefaultProducts() {
-    const defaultProducts: InsertProduct[] = [
-      {
-        title: "Woodland Stacker Toy",
-        category: "Toys",
-        description: "A soft-toned wooden stacking toy for little hands, finished with non-toxic paint.",
-        price: "28.00",
-        compareAtPrice: "34.00",
-        inventory: 42,
-        ageRange: "12 months+",
-        material: "Beech wood",
-        tags: "toy,wooden,developmental,gift",
-        sku: "TOY-WOOD-STACKER",
-        featured: "true",
-      },
-      {
-        title: "Organic Cotton Burp Cloth Set",
-        category: "Burp Cloths",
-        description: "Three absorbent organic cotton burp cloths in gentle nursery prints.",
-        price: "24.00",
-        inventory: 65,
-        ageRange: "Newborn+",
-        material: "Organic cotton muslin",
-        tags: "burp cloth,baby shower,organic,newborn",
-        sku: "BC-ORG-SET3",
-        featured: "true",
-      },
-      {
-        title: "First Words Board Book",
-        category: "Baby Books",
-        description: "A sturdy board book with bright everyday objects and simple first words.",
-        price: "12.00",
-        inventory: 80,
-        ageRange: "0-3 years",
-        material: "Recycled board",
-        tags: "book,board book,learning,baby",
-        sku: "BOOK-FIRST-WORDS",
-        featured: "true",
-      },
-      {
-        title: "Plush Bunny Lovey",
-        category: "Toys",
-        description: "A small comfort lovey with a plush bunny head and satin-trimmed blanket.",
-        price: "22.00",
-        inventory: 33,
-        ageRange: "Newborn+",
-        material: "Poly plush",
-        tags: "lovey,plush,bunny,newborn",
-        sku: "TOY-BUNNY-LOVEY",
-        featured: "false",
-      },
-      {
-        title: "Bath Time Counting Book",
-        category: "Baby Books",
-        description: "A waterproof bath book for counting ducks, boats, bubbles, and toes.",
-        price: "10.00",
-        inventory: 50,
-        ageRange: "6 months+",
-        material: "Waterproof EVA",
-        tags: "book,bath,counting",
-        sku: "BOOK-BATH-COUNT",
-        featured: "false",
-      },
-      {
-        title: "Little Arrival Gift Box",
-        category: "Gift Sets",
-        description: "A ready-to-gift box with a burp cloth, board book, teether, and handwritten note.",
-        price: "58.00",
-        compareAtPrice: "68.00",
-        inventory: 18,
-        ageRange: "Newborn+",
-        material: "Curated gift set",
-        tags: "gift box,baby shower,newborn,bundle",
-        sku: "GIFT-LITTLE-ARRIVAL",
-        featured: "true",
-      },
-    ];
-
-    defaultProducts.forEach((product) => {
-      const id = randomUUID();
-      this.products.set(id, productInputToRow(product, id));
     });
   }
 
@@ -815,6 +731,7 @@ export class MemStorage implements IStorage {
         inventory: updates.inventory ?? product.inventory,
         status: updates.status ?? (product.status as "active" | "draft" | "archived"),
         imageUrl: updates.imageUrl ?? product.imageUrl,
+        imageUrls: updates.imageUrls ?? product.imageUrls,
         ageRange: updates.ageRange ?? product.ageRange,
         material: updates.material ?? product.material,
         variants: updates.variants ?? product.variants,
@@ -1392,6 +1309,7 @@ export class DbStorage implements IStorage {
         inventory: updates.inventory ?? existing.inventory,
         status: updates.status ?? (existing.status as "active" | "draft" | "archived"),
         imageUrl: updates.imageUrl ?? existing.imageUrl,
+        imageUrls: updates.imageUrls ?? existing.imageUrls,
         ageRange: updates.ageRange ?? existing.ageRange,
         material: updates.material ?? existing.material,
         variants: updates.variants ?? existing.variants,
@@ -1420,23 +1338,17 @@ export class DbStorage implements IStorage {
   }
 }
 
-const useDatabaseStorage = Boolean(process.env.DATABASE_URL);
-export const storage: IStorage = useDatabaseStorage ? new DbStorage() : new MemStorage();
+export const storage: IStorage = new DbStorage();
 
 // Add a method to wait for initialization if needed
 export async function ensureStorageReady(): Promise<void> {
-  if (storage instanceof DbStorage) {
-    // Perform seeding now that database is initialized
-    try {
-      console.log("🌱 Seeding default data...");
-      await storage.performSeeding();
-      console.log("✅ Default data seeded successfully");
-    } catch (error) {
-      console.error("❌ Failed to seed default data:", error);
-      throw error;
-    }
-  } else {
-    console.log("Using in-memory storage with seeded local data");
+  try {
+    console.log("🌱 Seeding default data...");
+    await (storage as DbStorage).performSeeding();
+    console.log("✅ Default data seeded successfully");
+  } catch (error) {
+    console.error("❌ Failed to seed default data:", error);
+    throw error;
   }
 
   // Initialize default admin account from environment variables
@@ -1473,20 +1385,6 @@ export async function ensureStorageReady(): Promise<void> {
       console.error("❌ Failed to create initial admin account:", error);
       console.error("Error details:", error instanceof Error ? error.stack : error);
       throw error;
-    }
-  } else if (!useDatabaseStorage && process.env.NODE_ENV !== "production") {
-    const demoUsername = "admin";
-    const demoPassword = "admin123";
-    const existingAdmin = await storage.getUserByUsername(demoUsername);
-    if (!existingAdmin) {
-      const bcrypt = await import("bcrypt");
-      const hashedPassword = await bcrypt.default.hash(demoPassword, 10);
-      await storage.createUser({
-        username: demoUsername,
-        password: hashedPassword,
-        role: "admin",
-      });
-      console.log("Local demo admin created: admin / admin123");
     }
   } else {
     console.log("ℹ️  INIT_ADMIN_USERNAME or INIT_ADMIN_PASSWORD not set, skipping admin creation");

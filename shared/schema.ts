@@ -27,6 +27,12 @@ export const auditLogs = pgTable("audit_logs", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: doublePrecision("count").notNull().default(0),
+  resetAt: doublePrecision("reset_at").notNull(),
+});
+
 export type InsertAuditLog = {
   actorUserId?: string;
   actorUsername?: string;
@@ -230,6 +236,7 @@ export const products = pgTable("products", {
   inventory: doublePrecision("inventory").default(0),
   status: text("status").notNull().default("active"),
   imageUrl: text("image_url").default(""),
+  imageUrls: text("image_urls").default("[]"),
   ageRange: text("age_range").default(""),
   material: text("material").default(""),
   variants: text("variants").default("{}"),
@@ -253,6 +260,7 @@ export const insertProductSchema = z.object({
   inventory: z.number().default(0),
   status: z.enum(["active", "draft", "archived"]).default("active"),
   imageUrl: z.string().default(""),
+  imageUrls: z.string().default("[]"),
   ageRange: z.string().default(""),
   material: z.string().default(""),
   variants: z.string().default("{}"),
@@ -274,6 +282,7 @@ export type InsertProduct = {
   inventory?: number;
   status?: "active" | "draft" | "archived";
   imageUrl?: string;
+  imageUrls?: string;
   ageRange?: string;
   material?: string;
   variants?: string;

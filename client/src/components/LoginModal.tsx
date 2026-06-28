@@ -105,7 +105,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         <DialogHeader>
           <DialogTitle>Admin Access</DialogTitle>
           <DialogDescription>
-            {user ? "Change your password" : "Login to manage locations"}
+            {user ? "Change your password" : "Login to manage your baby boutique"}
           </DialogDescription>
         </DialogHeader>
 
