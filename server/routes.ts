@@ -40,6 +40,22 @@ function sanitizeInput(input: string): string {
     .trim();
 }
 
+function getSessionSecret(databaseUrl: string, isProduction: boolean) {
+  const configuredSecret = process.env.SESSION_SECRET?.trim();
+  if (configuredSecret && configuredSecret.length >= 32) {
+    return configuredSecret;
+  }
+
+  if (isProduction) {
+    console.warn(
+      "⚠️ SESSION_SECRET is missing or shorter than 32 characters. Deriving a stable production session secret from DATABASE_URL. Set SESSION_SECRET in Render for best security.",
+    );
+    return crypto.createHash("sha256").update(`session:${databaseUrl}`).digest("hex");
+  }
+
+  return "tiny-treasures-session-secret-change-in-production";
+}
+
 // Extend session data type
 declare module "express-session" {
   interface SessionData {
@@ -376,9 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   const isProduction = process.env.NODE_ENV === 'production';
   const sessionCookieName = process.env.SESSION_COOKIE_NAME || "connect.sid";
-  if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
-    throw new Error("SESSION_SECRET must be set to at least 32 characters in production");
-  }
+  const sessionSecret = getSessionSecret(databaseUrl, isProduction);
   const sessionStoreName = "PostgreSQL";
   const requiresSsl =
     isProduction || /[?&]sslmode=require(?:&|$)/i.test(databaseUrl);
@@ -397,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     session({
       name: sessionCookieName,
       store: sessionStore,
-      secret: process.env.SESSION_SECRET || "tiny-treasures-session-secret-change-in-production",
+      secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
       cookie: {

@@ -19,7 +19,7 @@ services:
       - key: SUPABASE_BUCKET
         sync: true
       - key: SESSION_SECRET
-        sync: true
+        generateValue: true
       - key: INIT_ADMIN_USERNAME
         sync: true
       - key: INIT_ADMIN_PASSWORD
