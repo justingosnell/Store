@@ -14,6 +14,7 @@ import { z } from "zod";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import sharp from "sharp";
 import { fileURLToPath } from "url";
 import { Readable } from "stream";
 import { createRateLimiter, requestId, requireTrustedOrigin } from "./security";
@@ -54,6 +55,50 @@ function getSessionSecret(databaseUrl: string, isProduction: boolean) {
   }
 
   return "tiny-treasures-session-secret-change-in-production";
+}
+
+function getImageRequestOptions(req: Request) {
+  const requestedWidth = Number.parseInt(String(req.query.w || ""), 10);
+  const width = Number.isFinite(requestedWidth) ? Math.min(Math.max(requestedWidth, 64), 1600) : undefined;
+  const format = String(req.query.format || req.query.fm || "").toLowerCase();
+  const acceptsWebp = req.headers.accept?.includes("image/webp");
+  const shouldUseWebp = format === "webp" || (!format && acceptsWebp);
+
+  return { width, shouldUseWebp };
+}
+
+async function sendImageBuffer(req: Request, res: Response, buffer: Buffer, mimeType: string) {
+  const { width, shouldUseWebp } = getImageRequestOptions(req);
+  const canOptimize = mimeType.startsWith("image/") && mimeType !== "image/svg+xml" && (width || shouldUseWebp);
+
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+
+  if (!canOptimize) {
+    res.setHeader("Content-Type", mimeType);
+    res.send(buffer);
+    return;
+  }
+
+  try {
+    let pipeline = sharp(buffer, { failOn: "none" }).rotate();
+    if (width) {
+      pipeline = pipeline.resize({ width, withoutEnlargement: true });
+    }
+    if (shouldUseWebp) {
+      const optimized = await pipeline.webp({ quality: 74 }).toBuffer();
+      res.setHeader("Content-Type", "image/webp");
+      res.send(optimized);
+      return;
+    }
+
+    const optimized = await pipeline.jpeg({ quality: 78, mozjpeg: true }).toBuffer();
+    res.setHeader("Content-Type", "image/jpeg");
+    res.send(optimized);
+  } catch (error) {
+    console.error("Image optimization failed, sending original:", error);
+    res.setHeader("Content-Type", mimeType);
+    res.send(buffer);
+  }
 }
 
 // Extend session data type
@@ -1003,9 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (parts.length === 2) {
           const mimeType = parts[0].replace("data:", "");
           const base64Data = parts[1];
-          res.setHeader("Content-Type", mimeType);
-          res.setHeader("Cache-Control", "public, max-age=31536000");
-          res.send(Buffer.from(base64Data, "base64"));
+          await sendImageBuffer(req, res, Buffer.from(base64Data, "base64"), mimeType);
           return;
         }
       }

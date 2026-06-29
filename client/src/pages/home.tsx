@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
 import type { Product } from "@shared/schema";
-import heroBg from "./apply-schema-fix.png";
+import heroBg from "./apply-schema-fix.webp";
 
 type CartLine = {
   product: Product;
@@ -58,6 +58,8 @@ const floatingItems = [
 ];
 
 const defaultFacebookReviewUrl = "https://www.facebook.com/your-page/reviews";
+const productCardSizes = "(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw";
+const productDetailSizes = "(min-width: 768px) 50vw, 100vw";
 
 const facebookReviews = [
   {
@@ -222,6 +224,34 @@ function productVisual(product: Product) {
   };
 
   return product.imageUrl || palettes[product.category] || "linear-gradient(135deg, #fce7f3 0%, #d8b4fe 100%)";
+}
+
+function addQueryParams(url: string, params: Record<string, string | number>) {
+  const [path, hash = ""] = url.split("#");
+  const [base, query = ""] = path.split("?");
+  const search = new URLSearchParams(query);
+  Object.entries(params).forEach(([key, value]) => search.set(key, String(value)));
+  const nextQuery = search.toString();
+  return `${base}${nextQuery ? `?${nextQuery}` : ""}${hash ? `#${hash}` : ""}`;
+}
+
+function getOptimizedImageUrl(url: string, width: number) {
+  if (!url) return url;
+
+  if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
+    return url.replace("/image/upload/", `/image/upload/f_auto,q_auto:eco,c_limit,w_${width}/`);
+  }
+
+  if (url.startsWith("/api/image/")) {
+    return addQueryParams(url, { w: width, format: "webp" });
+  }
+
+  return url;
+}
+
+function getImageSrcSet(url: string, widths: number[]) {
+  if (!url) return undefined;
+  return widths.map((width) => `${getOptimizedImageUrl(url, width)} ${width}w`).join(", ");
 }
 
 function categoryEmoji(category: string) {
@@ -807,6 +837,8 @@ function ProductCard({
   lazyLoadImages: boolean;
 }) {
   const variantDetails = parseProductVariants(product.variants);
+  const productImageSrc = product.imageUrl ? getOptimizedImageUrl(product.imageUrl, 640) : "";
+  const productImageSrcSet = product.imageUrl ? getImageSrcSet(product.imageUrl, [320, 480, 640, 960]) : undefined;
 
   return (
     <div className="group relative overflow-hidden rounded-3xl border border-pink-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -818,7 +850,9 @@ function ProductCard({
       >
         {product.imageUrl ? (
           <img
-            src={product.imageUrl}
+            src={productImageSrc}
+            srcSet={productImageSrcSet}
+            sizes={productCardSizes}
             alt={product.title}
             className="h-full w-full object-cover transition-transform duration-500 motion-reduce:transition-none group-hover:scale-105 motion-reduce:group-hover:scale-100"
             loading={lazyLoadImages ? "lazy" : "eager"}
@@ -908,6 +942,8 @@ function ProductDetailsDialog({
   const hasLongDescription = description.length > 180;
   const images = product ? getProductImages(product) : [];
   const activeImage = images[activeImageIndex];
+  const activeImageSrc = activeImage ? getOptimizedImageUrl(activeImage, 1200) : "";
+  const activeImageSrcSet = activeImage ? getImageSrcSet(activeImage, [640, 960, 1200, 1600]) : undefined;
 
   function showPreviousImage() {
     setActiveImageIndex((current) => (current - 1 + images.length) % images.length);
@@ -926,7 +962,9 @@ function ProductDetailsDialog({
               <div className="relative flex aspect-square max-h-[58dvh] items-center justify-center overflow-hidden bg-white md:max-h-[620px]">
                 {activeImage ? (
                   <img
-                    src={activeImage}
+                    src={activeImageSrc}
+                    srcSet={activeImageSrcSet}
+                    sizes={productDetailSizes}
                     alt={`${product.title}, view ${activeImageIndex + 1} of ${images.length}`}
                     className="h-full w-full object-contain p-2 sm:p-4"
                     loading="eager"
@@ -979,7 +1017,7 @@ function ProductDetailsDialog({
                         aria-current={activeImageIndex === index ? "true" : undefined}
                       >
                         <img
-                          src={url}
+                          src={getOptimizedImageUrl(url, 160)}
                           alt=""
                           className="h-full w-full object-contain"
                           loading={lazyLoadImages ? "lazy" : "eager"}
@@ -1159,13 +1197,14 @@ function CartDrawer({
             <div className="space-y-3">
               {cart.map((line) => {
                 const cartImageUrl = getProductImages(line.product)[0];
+                const cartImageSrc = cartImageUrl ? getOptimizedImageUrl(cartImageUrl, 160) : "";
                 return (
                   <div key={line.product.id} className="rounded-3xl border border-pink-100 bg-white p-3 shadow-sm">
                     <div className="flex gap-3">
                       <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-50 to-purple-50 text-3xl">
                         {cartImageUrl ? (
                           <img
-                            src={cartImageUrl}
+                            src={cartImageSrc}
                             alt={line.product.title}
                             className="h-full w-full object-cover"
                             loading="lazy"
