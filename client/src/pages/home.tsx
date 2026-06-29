@@ -267,7 +267,7 @@ function renderPolicyText(paragraph: string) {
   return (
     <>
       {before}
-      <a href={href} target="_blank" rel="noreferrer" className="font-semibold text-pink-600 underline underline-offset-4 hover:text-pink-700">
+      <a href={href} target="_blank" rel="noreferrer" className="font-semibold text-pink-800 underline underline-offset-4 hover:text-pink-900">
         {label}
       </a>
       {after}
@@ -388,8 +388,8 @@ export default function Home() {
                 <Baby className="h-5 w-5 text-white" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-lg font-bold tracking-tight text-pink-600">Tiny Treasures</span>
-                <span className="-mt-1 text-[10px] font-medium uppercase tracking-widest text-purple-400">Baby Store</span>
+                <span className="text-lg font-bold tracking-tight text-pink-700">Tiny Treasures</span>
+                <span className="-mt-1 text-[10px] font-semibold uppercase tracking-widest text-purple-700">Baby Store</span>
               </div>
             </Link>
 
@@ -398,19 +398,19 @@ export default function Home() {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-pink-50 hover:text-pink-500"
+                  className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-pink-50 hover:text-pink-700"
                 >
                   {item.label}
                 </a>
               ))}
-              <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-pink-50 hover:text-pink-500">
+              <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-pink-50 hover:text-pink-700">
                 Owner Login
               </Link>
             </div>
 
             <div className="flex items-center gap-2">
               <Link href="/login" className="hidden md:block">
-                <Button variant="ghost" size="sm" className="h-8 rounded-full text-xs text-gray-500 hover:bg-pink-50 hover:text-pink-500">
+                <Button variant="ghost" size="sm" className="h-8 rounded-full text-xs text-gray-700 hover:bg-pink-50 hover:text-pink-700">
                   <LogIn className="mr-1.5 h-3.5 w-3.5" />
                   Admin
                 </Button>
@@ -418,20 +418,20 @@ export default function Home() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="relative rounded-full text-gray-600 hover:bg-pink-50 hover:text-pink-500"
+                className="relative rounded-full text-gray-700 hover:bg-pink-50 hover:text-pink-700"
                 onClick={() => setCartOpen(true)}
                 aria-label={`Open shopping cart${cartCount > 0 ? ` with ${cartCount} item${cartCount === 1 ? "" : "s"}` : ""}`}
               >
                 <ShoppingCart className="h-5 w-5" aria-hidden="true" />
                 {cartCount > 0 && (
-                  <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-pink-500 p-0 text-xs text-white" aria-hidden="true">
+                  <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-pink-700 p-0 text-xs text-white" aria-hidden="true">
                     {cartCount > 9 ? "9+" : cartCount}
                   </Badge>
                 )}
               </Button>
               <button
                 type="button"
-                className="rounded-full p-2 text-gray-600 hover:bg-pink-50 md:hidden"
+                className="rounded-full p-2 text-gray-700 hover:bg-pink-50 md:hidden"
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
                 aria-expanded={menuOpen}
@@ -448,14 +448,14 @@ export default function Home() {
               <a
                 key={item.label}
                 href={item.href}
-                className="block cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-pink-50 hover:text-pink-500"
+                className="block cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-700"
                 onClick={() => setMenuOpen(false)}
               >
                 {item.label}
               </a>
             ))}
             <Link href="/login" onClick={() => setMenuOpen(false)}>
-              <span className="block cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-pink-50 hover:text-pink-500">
+              <span className="block cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-700">
                 Owner Login
               </span>
             </Link>
@@ -491,7 +491,7 @@ export default function Home() {
             style={{ animationDelay: "0.1s", textShadow: "2px 2px 2px rgba(255,255,255,0.9)" }}
           >
             Everything Baby,{" "}
-            <span className="bg-gradient-to-r from-pink-500 via-rose-400 to-purple-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-pink-700 via-rose-600 to-purple-700 bg-clip-text text-transparent">
               Made with Love
             </span>
           </h1>
@@ -504,7 +504,7 @@ export default function Home() {
             <a href="#shop">
               <Button
                 size="lg"
-                className="animate-pulse-glow rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-10 text-base font-semibold text-white shadow-xl transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-2xl"
+                className="animate-pulse-glow rounded-full bg-gradient-to-r from-pink-700 to-purple-700 px-10 text-base font-semibold text-white shadow-xl transition-all hover:from-pink-800 hover:to-purple-800 hover:shadow-2xl"
               >
                 Shop Now <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -517,13 +517,13 @@ export default function Home() {
         <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-rose-50 via-white to-purple-50 p-6 shadow-sm ring-1 ring-pink-100 sm:p-10">
           <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-pink-500">Make it personal</p>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-pink-700">Make it personal</p>
               <h2 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">Build your own gift box</h2>
               <p className="mt-3 max-w-2xl text-gray-600">Choose at least three treasures, add a personal note, and we’ll prepare them together as a thoughtful gift.</p>
             </div>
             <Button
               size="lg"
-              className="rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-8 text-white shadow-xl hover:from-pink-600 hover:to-purple-600"
+              className="rounded-full bg-gradient-to-r from-pink-700 to-purple-700 px-8 text-white shadow-xl hover:from-pink-800 hover:to-purple-800"
               onClick={() => setGiftBoxOpen(true)}
             >
               Build a Gift Box <Gift className="ml-2 h-5 w-5" aria-hidden="true" />
@@ -542,7 +542,7 @@ export default function Home() {
               </h2>
               <Star className="h-7 w-7 fill-yellow-300 text-yellow-300" />
             </div>
-            <p className="ml-9 text-gray-500">Our most loved items for your little one</p>
+            <p className="ml-9 text-gray-700">Our most loved items for your little one</p>
           </div>
         </div>
 
@@ -557,7 +557,7 @@ export default function Home() {
         )}
 
         {isLoading ? (
-          <div className="rounded-3xl border border-pink-100 bg-white p-10 text-center text-gray-500 shadow-sm">Loading products...</div>
+          <div className="rounded-3xl border border-pink-100 bg-white p-10 text-center text-gray-700 shadow-sm">Loading products...</div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
             {featuredProducts.map((product) => (
@@ -583,7 +583,7 @@ export default function Home() {
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
                 <div className="mb-3 flex items-end gap-2">
-                  <span className="text-3xl font-bold text-[#1877f2]">Facebook</span>
+                  <span className="text-3xl font-bold text-[#075eb8]">Facebook</span>
                   <span className="text-3xl font-bold text-gray-900">Reviews</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -593,12 +593,12 @@ export default function Home() {
                       <Star key={index} className="h-7 w-7 fill-yellow-300 text-yellow-300" />
                     ))}
                   </span>
-                  <span className="text-sm font-medium text-gray-500">(128)</span>
+                  <span className="text-sm font-medium text-gray-700">(128)</span>
                 </div>
               </div>
 
               <a href={facebookReviewUrl} target="_blank" rel="noreferrer">
-                <Button className="h-12 rounded-full bg-[#1877f2] px-8 text-base font-bold text-white shadow-md hover:bg-[#0f65d8]">
+                <Button className="h-12 rounded-full bg-[#075eb8] px-8 text-base font-bold text-white shadow-md hover:bg-[#064f9b]">
                   Review us on Facebook
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
@@ -630,16 +630,16 @@ export default function Home() {
                   <div className="mb-7 flex items-start gap-4">
                     <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white text-3xl shadow-sm">
                       {review.emoji}
-                      <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-white text-lg font-black text-[#1877f2] shadow-sm">
+                      <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-white text-lg font-black text-[#075eb8] shadow-sm">
                         f
                       </span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-bold text-gray-900">{review.name}</h3>
-                        <span className="grid h-5 w-5 place-items-center rounded-full bg-[#1877f2] text-xs font-bold text-white">✓</span>
+                        <span className="grid h-5 w-5 place-items-center rounded-full bg-[#075eb8] text-xs font-bold text-white">✓</span>
                       </div>
-                      <p className="text-sm text-gray-500">{review.time}</p>
+                      <p className="text-sm text-gray-700">{review.time}</p>
                     </div>
                   </div>
 
@@ -671,7 +671,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-pink-500">About Tiny Treasures</p>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-pink-700">About Tiny Treasures</p>
               <h2 className="mt-2 text-3xl font-bold text-gray-900 md:text-4xl">Thoughtful baby gifts, chosen with care</h2>
               <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600">
                 Tiny Treasures is a curated baby boutique focused on soft essentials, keepsakes, storybooks, and gifts that feel personal from the first peek.
@@ -685,7 +685,7 @@ export default function Home() {
                   <button
                     key={policy.id}
                     type="button"
-                    className="flex min-h-12 items-center justify-between rounded-2xl border border-pink-100 px-4 py-3 text-left text-sm font-semibold text-gray-700 transition-colors hover:border-pink-200 hover:bg-pink-50 hover:text-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+                    className="flex min-h-12 items-center justify-between rounded-2xl border border-pink-100 px-4 py-3 text-left text-sm font-semibold text-gray-800 transition-colors hover:border-pink-200 hover:bg-pink-50 hover:text-pink-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-700"
                     onClick={() => setActivePolicyId(policy.id)}
                   >
                     <span>{policy.title}</span>
@@ -769,7 +769,7 @@ export default function Home() {
             <Textarea id="gift-note" maxLength={500} value={giftNote} onChange={(event) => setGiftNote(event.target.value)} placeholder="Write a warm message for the recipient…" />
           </div>
           <Button
-            className="min-h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white"
+            className="min-h-12 rounded-full bg-gradient-to-r from-pink-700 to-purple-700 text-white"
             disabled={giftSelections.length < 3}
             onClick={addGiftBoxToCart}
           >
@@ -838,12 +838,12 @@ function ProductCard({
           </h3>
         </div>
 
-        <p className="mb-2 line-clamp-2 text-xs text-gray-400">{product.description}</p>
+        <p className="mb-2 line-clamp-2 text-xs text-gray-700">{product.description}</p>
 
         {variantDetails.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-1">
             {variantDetails.map((detail) => (
-              <span key={detail} className="rounded-full bg-pink-50 px-2 py-0.5 text-[11px] font-medium text-pink-600">
+              <span key={detail} className="rounded-full bg-pink-100 px-2 py-0.5 text-[11px] font-semibold text-pink-800">
                 {detail}
               </span>
             ))}
@@ -851,16 +851,16 @@ function ProductCard({
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-pink-600">{money(product.price)}</span>
+          <span className="text-lg font-bold text-pink-700">{money(product.price)}</span>
           <div className="flex items-center gap-2">
-            <span className={`text-xs ${product.inventory > 0 ? "text-green-500" : "text-red-400"}`}>
+            <span className={`text-xs font-medium ${product.inventory > 0 ? "text-green-700" : "text-red-700"}`}>
               {product.inventory > 0 ? `${product.inventory} left` : "Out of stock"}
             </span>
             <Button
               size="sm"
               onClick={() => onAdd(product)}
               disabled={product.inventory === 0}
-              className="h-8 rounded-full bg-pink-500 px-3 text-xs text-white shadow-sm hover:bg-pink-600"
+              className="h-8 rounded-full bg-pink-700 px-3 text-xs text-white shadow-sm hover:bg-pink-800"
             >
               <ShoppingCart className="mr-1 h-3.5 w-3.5" />
               Add
@@ -993,7 +993,7 @@ function ProductDetailsDialog({
 
             <div className="flex flex-col px-5 pb-8 pt-6 sm:px-10 sm:py-12">
               <DialogHeader className="space-y-0 text-left">
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-700">
                   Tiny Treasures
                 </p>
                 <DialogTitle className="pr-8 text-2xl font-normal leading-tight text-[#121212] sm:text-3xl">
@@ -1008,7 +1008,7 @@ function ProductDetailsDialog({
                 </p>
                 {isOnSale && (
                   <>
-                    <p className="text-sm text-gray-500 line-through">
+                    <p className="text-sm text-gray-700 line-through">
                       <span className="sr-only">Regular price: </span>
                       {money(compareAtPrice)}
                     </p>
@@ -1019,7 +1019,7 @@ function ProductDetailsDialog({
                 )}
               </div>
 
-              <p className="mt-2 text-xs text-gray-500">Shipping calculated at checkout.</p>
+              <p className="mt-2 text-xs text-gray-700">Shipping calculated at checkout.</p>
 
               <div className="mt-7">
                 <DialogDescription
@@ -1081,7 +1081,7 @@ function ProductDetailsDialog({
 
               <div className="mt-6">
                 <Button
-                  className="animate-pulse-glow min-h-12 w-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-8 py-3 text-base font-semibold text-white shadow-xl transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-2xl focus-visible:ring-pink-500 motion-reduce:animate-none"
+                  className="animate-pulse-glow min-h-12 w-full rounded-full bg-gradient-to-r from-pink-700 to-purple-700 px-8 py-3 text-base font-semibold text-white shadow-xl transition-all hover:from-pink-800 hover:to-purple-800 hover:shadow-2xl focus-visible:ring-pink-700 motion-reduce:animate-none"
                   onClick={() => onAdd(product, quantity)}
                   disabled={product.inventory === 0}
                 >
@@ -1139,7 +1139,7 @@ function CartDrawer({
         <div className="flex items-center justify-between border-b border-pink-100 bg-white p-4">
           <div>
             <h2 className="text-xl font-bold text-gray-800">Shopping cart</h2>
-            <p className="text-sm text-gray-500">{cart.length} unique items</p>
+            <p className="text-sm text-gray-700">{cart.length} unique items</p>
           </div>
           <Button variant="outline" size="icon" className="rounded-full border-pink-100 bg-white" onClick={onClose} aria-label="Close shopping cart">
             <X className="h-4 w-4" aria-hidden="true" />
@@ -1149,9 +1149,9 @@ function CartDrawer({
           {cart.length === 0 ? (
             <div className="grid h-full place-items-center rounded-3xl border border-dashed border-pink-200 bg-white p-8 text-center">
               <div>
-                <ShoppingCart className="mx-auto mb-4 h-10 w-10 text-pink-300" />
+                <ShoppingCart className="mx-auto mb-4 h-10 w-10 text-pink-700" />
                 <p className="font-bold text-gray-800">Your cart is empty</p>
-                <p className="mt-1 text-sm text-gray-500">Add a tiny treasure to get started.</p>
+                <p className="mt-1 text-sm text-gray-700">Add a tiny treasure to get started.</p>
               </div>
             </div>
           ) : (
@@ -1182,8 +1182,8 @@ function CartDrawer({
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate font-bold text-gray-800">{line.product.title}</h3>
-                        <p className="truncate text-sm text-gray-500">{line.product.category}</p>
-                        <p className="mt-1 text-sm font-bold text-pink-600">{money(line.product.price)}</p>
+                        <p className="truncate text-sm text-gray-700">{line.product.category}</p>
+                        <p className="mt-1 text-sm font-bold text-pink-700">{money(line.product.price)}</p>
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
@@ -1211,7 +1211,7 @@ function CartDrawer({
             <div className="flex justify-between text-lg font-bold"><span>Total</span><span>{money(total)}</span></div>
           </div>
           {checkoutError && <p className="mt-3 text-sm text-red-700" role="alert">{checkoutError}</p>}
-          <Button className="mt-4 w-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600" disabled={!cart.length || isCheckingOut} onClick={onCheckout}>
+          <Button className="mt-4 w-full rounded-full bg-gradient-to-r from-pink-700 to-purple-700 text-white hover:from-pink-800 hover:to-purple-800" disabled={!cart.length || isCheckingOut} onClick={onCheckout}>
             {isCheckingOut ? "Opening Square…" : "Secure Checkout with Square"}
           </Button>
         </div>
