@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -9,10 +9,11 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { PageTransition } from "@/components/PageTransition";
 import { getApiUrl } from "@/lib/api";
 import Home from "@/pages/home";
-import Login from "@/pages/login";
-import Admin from "@/pages/admin";
-import Categories from "@/pages/categories";
-import NotFound from "@/pages/not-found";
+
+const Login = lazy(() => import("@/pages/login"));
+const Admin = lazy(() => import("@/pages/admin"));
+const Categories = lazy(() => import("@/pages/categories"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PerformanceRuntime() {
   const { data: settings = {} } = useQuery<Record<string, string>>({
@@ -126,7 +127,15 @@ function PerformanceRuntime() {
 }
 
 // Protected route wrapper
-function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
+function RouteFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-pink-500" aria-label="Loading page" />
+    </div>
+  );
+}
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -141,7 +150,7 @@ function ProtectedRoute({ component: Component }: { component: () => JSX.Element
     return <Redirect to="/login" />;
   }
 
-  return <Component />;
+  return <>{children}</>;
 }
 
 function Router() {
@@ -154,10 +163,18 @@ function Router() {
         </Route>
         <Route path="/login" component={Login} />
         <Route path="/admin">
-          {() => <ProtectedRoute component={Admin} />}
+          {() => (
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          )}
         </Route>
         <Route path="/categories">
-          {() => <ProtectedRoute component={Categories} />}
+          {() => (
+            <ProtectedRoute>
+              <Categories />
+            </ProtectedRoute>
+          )}
         </Route>
         <Route component={NotFound} />
       </Switch>
@@ -173,7 +190,9 @@ function App() {
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
-            <Router />
+            <Suspense fallback={<RouteFallback />}>
+              <Router />
+            </Suspense>
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
