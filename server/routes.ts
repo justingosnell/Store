@@ -1532,6 +1532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products", async (_req: Request, res: Response) => {
     try {
       const products = await storage.getAllProducts();
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
       res.json(products);
     } catch (error) {
       console.error("Get products error:", error);
@@ -2216,6 +2217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         acc[setting.key] = setting.value;
         return acc;
       }, {} as Record<string, string>);
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       res.json(settingsObj);
     } catch (error) {
       console.error("Get settings error:", error);

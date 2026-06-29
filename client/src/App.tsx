@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { PageTransition } from "@/components/PageTransition";
 import { getApiUrl } from "@/lib/api";
+import { useAfterInitialLoad } from "@/hooks/useAfterInitialLoad";
 import Home from "@/pages/home";
 
 const Login = lazy(() => import("@/pages/login"));
@@ -16,6 +17,7 @@ const Categories = lazy(() => import("@/pages/categories"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PerformanceRuntime() {
+  const canLoadRuntimeSettings = useAfterInitialLoad(1200);
   const { data: settings = {} } = useQuery<Record<string, string>>({
     queryKey: ["settings"],
     queryFn: async () => {
@@ -23,6 +25,7 @@ function PerformanceRuntime() {
       if (!response.ok) throw new Error("Failed to load performance settings");
       return response.json();
     },
+    enabled: canLoadRuntimeSettings,
   });
 
   const deferBelowFoldScripts = settings.defer_below_fold_scripts === "true";

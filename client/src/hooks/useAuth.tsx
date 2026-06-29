@@ -19,9 +19,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const shouldCheckAuth = location === "/login" || location.startsWith("/admin") || location.startsWith("/categories");
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [, setLocation] = useLocation();
+  const [isLoading, setIsLoading] = useState(shouldCheckAuth);
 
   const checkAuth = async (skipLoadingUpdate: boolean = false) => {
     try {
@@ -93,8 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (shouldCheckAuth) {
+      setIsLoading(true);
+      checkAuth();
+      return;
+    }
+
+    setUser(null);
+    setIsLoading(false);
+  }, [shouldCheckAuth]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, checkAuth, changePassword }}>

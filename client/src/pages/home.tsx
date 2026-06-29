@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
+import { useAfterInitialLoad } from "@/hooks/useAfterInitialLoad";
 import type { Product } from "@shared/schema";
 import heroBg from "./apply-schema-fix.webp";
 
@@ -318,14 +319,17 @@ export default function Home() {
   const [checkoutError, setCheckoutError] = useState("");
   const [activePolicyId, setActivePolicyId] = useState<PolicyId | null>(null);
   const reviewSliderRef = useRef<HTMLDivElement>(null);
+  const canLoadProducts = useAfterInitialLoad(500);
+  const canLoadSettings = useAfterInitialLoad(1200);
 
-  const { data: products = [], isLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["products"],
     queryFn: async () => {
       const response = await fetch(getApiUrl("/api/products"));
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
+    enabled: canLoadProducts,
   });
   const { data: siteSettings = {} } = useQuery<Record<string, string>>({
     queryKey: ["settings"],
@@ -334,6 +338,7 @@ export default function Home() {
       if (!response.ok) throw new Error("Failed to fetch store settings");
       return response.json();
     },
+    enabled: canLoadSettings,
   });
 
   const activeProducts = products.filter((product) => product.status === "active");
@@ -587,7 +592,7 @@ export default function Home() {
           </div>
         )}
 
-        {isLoading ? (
+        {!canLoadProducts || productsLoading ? (
           <div className="rounded-3xl border border-pink-100 bg-white p-10 text-center text-gray-700 shadow-sm">Loading products...</div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
