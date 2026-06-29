@@ -379,7 +379,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-gray-800">
+    <main className="min-h-screen overflow-x-hidden bg-white text-gray-800">
       <nav className="sticky top-0 z-50 border-b border-pink-100 bg-white/95 shadow-sm backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex h-16 items-center justify-between">
@@ -420,16 +420,23 @@ export default function Home() {
                 size="sm"
                 className="relative rounded-full text-gray-600 hover:bg-pink-50 hover:text-pink-500"
                 onClick={() => setCartOpen(true)}
+                aria-label={`Open shopping cart${cartCount > 0 ? ` with ${cartCount} item${cartCount === 1 ? "" : "s"}` : ""}`}
               >
-                <ShoppingCart className="h-5 w-5" />
+                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
                 {cartCount > 0 && (
-                  <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-pink-500 p-0 text-xs text-white">
+                  <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-pink-500 p-0 text-xs text-white" aria-hidden="true">
                     {cartCount > 9 ? "9+" : cartCount}
                   </Badge>
                 )}
               </Button>
-              <button className="rounded-full p-2 text-gray-600 hover:bg-pink-50 md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
-                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <button
+                type="button"
+                className="rounded-full p-2 text-gray-600 hover:bg-pink-50 md:hidden"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={menuOpen}
+              >
+                {menuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -783,7 +790,7 @@ export default function Home() {
         isCheckingOut={isCheckingOut}
         checkoutError={checkoutError}
       />
-    </div>
+    </main>
   );
 }
 
@@ -1134,8 +1141,8 @@ function CartDrawer({
             <h2 className="text-xl font-bold text-gray-800">Shopping cart</h2>
             <p className="text-sm text-gray-500">{cart.length} unique items</p>
           </div>
-          <Button variant="outline" size="icon" className="rounded-full border-pink-100 bg-white" onClick={onClose}>
-            <X className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="rounded-full border-pink-100 bg-white" onClick={onClose} aria-label="Close shopping cart">
+            <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
@@ -1181,12 +1188,12 @@ function CartDrawer({
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex items-center rounded-full border border-pink-100">
-                        <button className="p-2" onClick={() => onQuantity(line.product.id, -1)}>
-                          <Minus className="h-4 w-4" />
+                        <button type="button" className="p-2" onClick={() => onQuantity(line.product.id, -1)} aria-label={`Decrease quantity for ${line.product.title}`}>
+                          <Minus className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <span className="w-10 text-center text-sm font-bold">{line.quantity}</span>
-                        <button className="p-2" onClick={() => onQuantity(line.product.id, 1)}>
-                          <Plus className="h-4 w-4" />
+                        <button type="button" className="p-2" onClick={() => onQuantity(line.product.id, 1)} aria-label={`Increase quantity for ${line.product.title}`}>
+                          <Plus className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                       <span className="font-bold text-gray-800">{money(Number(line.product.price) * line.quantity)}</span>
