@@ -5,8 +5,32 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function deferCssPlugin() {
+  return {
+    name: "defer-render-blocking-css",
+    enforce: "post" as const,
+    transformIndexHtml: {
+      order: "post" as const,
+      handler(html: string) {
+        return html.replace(
+          /<link rel="stylesheet"([^>]*) href="([^"]+\.css)"([^>]*)>/g,
+          (_match, before, href, after) => {
+            const attrs = `${before}${after}`.trim();
+            const extraAttrs = attrs ? ` ${attrs}` : "";
+            return [
+              `<link rel="stylesheet"${extraAttrs} href="${href}" media="print" data-async-css>`,
+              `<script>document.querySelectorAll('link[data-async-css]').forEach(function(link){function activate(){link.media='all'}if(link.sheet){activate()}else{link.addEventListener('load',activate,{once:true})}})</script>`,
+              `<noscript><link rel="stylesheet"${extraAttrs} href="${href}"></noscript>`,
+            ].join("");
+          },
+        );
+      },
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), deferCssPlugin()],
   root: path.resolve(__dirname, "client"),
   server: {
     port: 3000,
