@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { corsMiddleware } from "./cors";
@@ -26,6 +27,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(corsMiddleware);
+app.use(compression());
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: '2mb' }));

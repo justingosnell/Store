@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { corsMiddleware } from "./cors";
 
@@ -32,6 +33,7 @@ const app = express();
 app.disable("x-powered-by");
 
 app.use(corsMiddleware);
+app.use(compression());
 
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));

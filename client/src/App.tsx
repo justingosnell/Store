@@ -17,7 +17,7 @@ const Categories = lazy(() => import("@/pages/categories"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PerformanceRuntime() {
-  const canLoadRuntimeSettings = useAfterInitialLoad(1200);
+  const canLoadRuntimeSettings = useAfterInitialLoad(6000);
   const { data: settings = {} } = useQuery<Record<string, string>>({
     queryKey: ["settings"],
     queryFn: async () => {

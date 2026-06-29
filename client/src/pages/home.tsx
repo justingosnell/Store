@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
-import { useAfterInitialLoad } from "@/hooks/useAfterInitialLoad";
+import { useAfterInitialLoad, useAfterInitialLoadOrInteraction } from "@/hooks/useAfterInitialLoad";
 import type { Product } from "@shared/schema";
 import heroBg from "./apply-schema-fix.webp";
 
@@ -319,8 +319,8 @@ export default function Home() {
   const [checkoutError, setCheckoutError] = useState("");
   const [activePolicyId, setActivePolicyId] = useState<PolicyId | null>(null);
   const reviewSliderRef = useRef<HTMLDivElement>(null);
-  const canLoadProducts = useAfterInitialLoad(500);
-  const canLoadSettings = useAfterInitialLoad(1200);
+  const canLoadProducts = useAfterInitialLoadOrInteraction(4500);
+  const canLoadSettings = useAfterInitialLoad(6000);
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["products"],
