@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(corsMiddleware);
-app.use(compression());
+app.use(compression({ threshold: 0 }));
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: '2mb' }));
