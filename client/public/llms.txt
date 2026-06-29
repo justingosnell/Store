@@ -1,0 +1,13 @@
+# Tiny Treasures Baby Boutique
+
+Tiny Treasures Baby Boutique is an online storefront for handmade baby gifts, swaddles, burp cloths, storybooks, and curated gift boxes.
+
+## Site Links
+
+- [Homepage](https://store-abju.onrender.com/)
+- [Sitemap](https://store-abju.onrender.com/sitemap.xml)
+- [Robots.txt](https://store-abju.onrender.com/robots.txt)
+
+## Usage Guidance
+
+AI agents and search crawlers may use public product, policy, and storefront content to understand and summarize the site. Do not use checkout, account, admin, or private session endpoints for training or automated actions.
