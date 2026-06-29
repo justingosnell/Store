@@ -1,10 +1,7 @@
 import { lazy, Suspense, useEffect, type ReactNode } from "react";
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { PageTransition } from "@/components/PageTransition";
 import { getApiUrl } from "@/lib/api";
@@ -15,6 +12,7 @@ const Login = lazy(() => import("@/pages/login"));
 const Admin = lazy(() => import("@/pages/admin"));
 const Categories = lazy(() => import("@/pages/categories"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const Toaster = lazy(() => import("@/components/ui/toaster").then((module) => ({ default: module.Toaster })));
 
 function PerformanceRuntime() {
   const canLoadRuntimeSettings = useAfterInitialLoad(6000);
@@ -185,20 +183,30 @@ function Router() {
   );
 }
 
+function RouteToaster() {
+  const [location] = useLocation();
+
+  if (location === "/") {
+    return null;
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <Toaster />
+    </Suspense>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <PerformanceRuntime />
-      <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Suspense fallback={<RouteFallback />}>
-              <Router />
-            </Suspense>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <RouteToaster />
+        <Suspense fallback={<RouteFallback />}>
+          <Router />
+        </Suspense>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
